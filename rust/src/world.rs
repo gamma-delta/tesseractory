@@ -1,7 +1,19 @@
 use ahash::AHashMap;
+use getset::{CopyGetters, Getters};
 use glam::IVec4;
 
-use crate::math::{BlockPos, ChunkPos};
+use crate::{
+  math::{BlockPos, ChunkPos},
+  type_aliases::{Color, Vec4},
+};
+
+#[derive(CopyGetters, Getters)]
+pub struct World {
+  #[getset(get = "pub")]
+  foxels: FoxelStore,
+  #[getset(get_copy = "pub")]
+  sun_pos: Vec4,
+}
 
 pub struct FoxelStore {
   // evil
@@ -16,8 +28,10 @@ impl FoxelStore {
   }
 
   pub fn sample_scene(&mut self) {
-    let foxel = self.foxel_at_mut(BlockPos::new(3, 2, 0, 0)).unwrap();
-    *foxel = FoxelType::RedBlock;
+    *self.expect_foxel_at_mut(BlockPos::new(3, 2, 0, 0)) = FoxelType::RedBlock;
+    *self.expect_foxel_at_mut(BlockPos::new(4, 2, 0, 0)) =
+      FoxelType::GreenBlock;
+    *self.expect_foxel_at_mut(BlockPos::new(3, 2, 1, 0)) = FoxelType::BlueBlock;
   }
 
   /// If there exists a chunk with the given coordinate, return it
@@ -40,6 +54,12 @@ impl FoxelStore {
     let chunk_pos = pos.chunk();
     let chunk = self.chunks.get_mut(&chunk_pos)?;
     chunk.get_foxel_mut(pos)
+  }
+
+  pub fn expect_foxel_at_mut(&mut self, pos: BlockPos) -> &mut FoxelType {
+    let chunk_pos = pos.chunk();
+    let chunk = self.expect_chunk_for(chunk_pos);
+    chunk.get_foxel_mut(pos).unwrap()
   }
 }
 
@@ -110,10 +130,21 @@ impl Chunk {
 /// Foxes are imaginary creatures that exist only in dreams.
 /// For reasons they can't explain, everyone knows what a fox looks like,
 /// but no one can ever remember having seen one.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FoxelType {
   Air,
   RedBlock,
   GreenBlock,
   BlueBlock,
+}
+
+impl FoxelType {
+  pub fn color(&self) -> Color {
+    match self {
+      FoxelType::Air => Color::TRANSPARENT_BLACK,
+      FoxelType::RedBlock => Color::from_rgb(1.0, 0.0, 0.0),
+      FoxelType::GreenBlock => Color::from_rgb(0.0, 1.0, 0.0),
+      FoxelType::BlueBlock => Color::from_rgb(0.0, 0.0, 1.0),
+    }
+  }
 }

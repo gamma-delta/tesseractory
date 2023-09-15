@@ -2,7 +2,7 @@ use glam::IVec4;
 use itertools::Itertools;
 use tesseractory::{
   algos,
-  math::{UnitVec4, Vec4},
+  type_aliases::{UnitVec4, Vec4},
 };
 use wedged::base::Const;
 

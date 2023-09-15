@@ -1,25 +1,54 @@
 pub mod algos;
 pub mod godot_bridge;
 pub mod math;
+pub mod type_aliases;
 pub mod world;
 
 use getset::CopyGetters;
 use glam::IVec2;
-use math::GVec2;
-use wedged::{
-  base::{Const, DimNameAdd},
-  subspace::SimpleBlade,
-};
+use math::BlockPos;
+use type_aliases::GVec2;
+use world::FoxelType;
 
-use crate::math::{Axis, GVec3, GVec4, Vec3, Vec4};
+use crate::{
+  godot_bridge::CanvasWrapper,
+  type_aliases::{Color, GVec3, GVec4, UnitVec3, Vec3, Vec4},
+  world::FoxelStore,
+};
 
 pub struct GameState {
   camera: Camera,
+  world: FoxelStore,
 }
 
 impl GameState {
   pub fn new(camera: Camera) -> Self {
-    Self { camera }
+    let mut world = FoxelStore::new();
+    world.sample_scene();
+    Self { camera, world }
+  }
+
+  pub fn draw_world(&self, mut canvas: CanvasWrapper<'_>) {
+    for y in 0..self.camera.canvas_y {
+      for x in 0..self.camera.canvas_x {
+        let px = IVec2::new(x as _, y as _);
+        let worldpx = self.camera.worldspace_px(px);
+        let ray = worldpx - self.camera.pos();
+
+        let iter = algos::foxel_iter(worldpx, ray.normalize());
+        let hit = iter.take(10).find_map(|pos| {
+          let foxel = self.world.foxel_at(BlockPos(pos.coord))?;
+          (foxel != FoxelType::Air).then_some(foxel)
+        });
+        let color = if let Some(hit) = hit {
+          hit.color()
+        } else {
+          Color::from_rgb(0.2, 0.2, 0.2)
+        };
+
+        canvas.set_pixel(px, color);
+      }
+    }
   }
 }
 
@@ -27,7 +56,8 @@ impl GameState {
 #[getset(get_copy = "pub")]
 pub struct Camera {
   pos_real: Vec3,
-  imag: i32,
+  pos_imag: i32,
+  heading_real: UnitVec3,
 
   focal_dist: f32,
   fovx: f32,
@@ -41,10 +71,12 @@ impl Camera {
   pub fn new(canvas_x: u32, canvas_y: u32) -> Self {
     Self {
       pos_real: Vec3::zeroed(),
-      imag: 0,
+      pos_imag: 0,
+      heading_real: Vec3::new(0.0, 1.0, 0.0).normalize(),
+
       focal_dist: 0.01,
-      fovx: 0.01,
-      fovy: 0.01,
+      fovx: 0.0001,
+      fovy: 0.0001,
 
       canvas_x,
       canvas_y,
@@ -62,8 +94,10 @@ impl Camera {
   }
 
   pub fn pos(&self) -> Vec4 {
+    // what's updim
     let mut updim: Vec4 = self.pos_real.cast_dim();
-    updim.w = self.imag as _;
+    // not much what's updim double-you?
+    updim.w = self.pos_imag as _;
     updim
   }
 }

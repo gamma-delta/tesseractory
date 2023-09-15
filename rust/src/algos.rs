@@ -1,7 +1,10 @@
 use glam::IVec4;
 use itertools::Itertools;
 
-use crate::math::{UnitVec4, Vec4};
+use crate::{
+  math::Axis,
+  type_aliases::{UnitVec4, Vec4},
+};
 
 /// https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3443&rep=rep1&type=pdf
 #[derive(Debug, Clone)]
@@ -74,17 +77,33 @@ impl Iterator for AWFoxelIter {
       .enumerate()
       .min_by(|(_, a), (_, b)| a.total_cmp(&b))
       .unwrap();
-    dbg!(self.t_max);
     self.t_max[min_axis] += self.t_delta[min_axis];
     self.cursor[min_axis] += self.steps[min_axis];
-    Some(AWFoxelIterElt { coord: self.cursor })
+
+    let normal_axis = Axis::try_from(min_axis as u8).unwrap();
+    let normal_positive = self.steps[min_axis] > 0;
+    Some(AWFoxelIterElt {
+      coord: self.cursor,
+      normal_axis,
+      normal_positive,
+    })
   }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct AWFoxelIterElt {
   pub coord: IVec4,
-  // TODO: probably get the hit pos on the hyperface
+  pub normal_axis: Axis,
+  pub normal_positive: bool,
+}
+
+impl AWFoxelIterElt {
+  pub fn normal(&self) -> IVec4 {
+    let mut n = IVec4::ZERO;
+    n[self.normal_axis as u8 as usize] =
+      if self.normal_positive { 1 } else { -1 };
+    n
+  }
 }
 
 pub fn foxel_iter(start: Vec4, heading: UnitVec4) -> AWFoxelIter {
