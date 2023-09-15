@@ -70,7 +70,7 @@ pub struct Camera {
 impl Camera {
   pub fn new(canvas_x: u32, canvas_y: u32) -> Self {
     Self {
-      pos_real: Vec3::zeroed(),
+      pos_real: Vec3::new(2.0, 0.0, 0.0),
       pos_imag: 0,
       heading_real: Vec3::new(0.0, 1.0, 0.0).normalize(),
 
@@ -87,6 +87,7 @@ impl Camera {
     let centered =
       px - IVec2::new(self.canvas_x as i32 / 2, self.canvas_y as i32 / 2);
     let centered = GVec2::new(centered.x as _, centered.y as _);
+    // let aspect = self.canvas_x as f32 / self.canvas_y as f32;
     let in_2d = centered * GVec2::new(self.fovx, self.fovy);
 
     let offset = Vec4::new(-in_2d.y, self.focal_dist, -in_2d.x, 0.0);
