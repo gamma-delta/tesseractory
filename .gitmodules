@@ -1,3 +1,4 @@
-[submodule "godot/extern/godot-cpp"]
-	path = godot/extern/godot-cpp
-	url = https://github.com/godotengine/godot-cpp/
+[submodule "godot-engine"]
+	path = godot-engine
+	url = https://github.com/dsnopek/godot.git
+	branch = gdextension-hot-reload
