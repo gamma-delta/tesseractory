@@ -1,4 +1,0 @@
-[submodule "godot-engine"]
-	path = godot-engine
-	url = https://github.com/dsnopek/godot.git
-	branch = gdextension-hot-reload
