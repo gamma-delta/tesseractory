@@ -32,6 +32,7 @@ impl FoxelStore {
     *self.expect_foxel_at_mut(BlockPos::new(4, 2, 0, 0)) =
       FoxelType::GreenBlock;
     *self.expect_foxel_at_mut(BlockPos::new(3, 2, 1, 0)) = FoxelType::BlueBlock;
+    *self.expect_foxel_at_mut(BlockPos::new(3, 3, 1, 0)) = FoxelType::RedBlock;
   }
 
   /// If there exists a chunk with the given coordinate, return it
