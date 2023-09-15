@@ -27,12 +27,23 @@ impl FoxelStore {
     }
   }
 
-  pub fn sample_scene(&mut self) {
-    *self.expect_foxel_at_mut(BlockPos::new(3, 2, 0, 0)) = FoxelType::RedBlock;
-    *self.expect_foxel_at_mut(BlockPos::new(4, 2, 0, 0)) =
-      FoxelType::GreenBlock;
-    *self.expect_foxel_at_mut(BlockPos::new(3, 2, 1, 0)) = FoxelType::BlueBlock;
-    *self.expect_foxel_at_mut(BlockPos::new(3, 3, 1, 0)) = FoxelType::RedBlock;
+  pub fn setup_sample_scene(&mut self) {
+    self.set_foxel(BlockPos::new(0, 0, 0, 0), FoxelType::ColorBlock(255, 0, 0));
+    self
+      .set_foxel(BlockPos::new(1, 3, -2, 0), FoxelType::ColorBlock(0, 255, 0));
+    self.set_foxel(BlockPos::new(0, 0, 1, 0), FoxelType::ColorBlock(0, 0, 255));
+    self.set_foxel(
+      BlockPos::new(0, 1, 0, 0),
+      FoxelType::ColorBlock(0, 255, 255),
+    );
+
+    for w in -3..=3 {
+      let b = ((w + 3) * 20) as u8;
+      self.set_foxel(
+        BlockPos::new(0, 0, -1, w),
+        FoxelType::ColorBlock(255, 255, b),
+      );
+    }
   }
 
   /// If there exists a chunk with the given coordinate, return it
@@ -61,6 +72,17 @@ impl FoxelStore {
     let chunk_pos = pos.chunk();
     let chunk = self.expect_chunk_for(chunk_pos);
     chunk.get_foxel_mut(pos).unwrap()
+  }
+
+  /// Returns the previous foxel if any was there
+  pub fn set_foxel(
+    &mut self,
+    pos: BlockPos,
+    foxel: FoxelType,
+  ) -> Option<FoxelType> {
+    let extant = self.foxel_at(pos);
+    *self.expect_foxel_at_mut(pos) = foxel;
+    extant
   }
 }
 
@@ -134,18 +156,21 @@ impl Chunk {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FoxelType {
   Air,
-  RedBlock,
-  GreenBlock,
-  BlueBlock,
+  ColorBlock(u8, u8, u8),
 }
 
 impl FoxelType {
+  pub fn transparent(&self) -> bool {
+    match self {
+      FoxelType::Air => true,
+      _ => false,
+    }
+  }
+
   pub fn color(&self) -> Color {
     match self {
-      FoxelType::Air => Color::TRANSPARENT_BLACK,
-      FoxelType::RedBlock => Color::from_rgb(1.0, 0.0, 0.0),
-      FoxelType::GreenBlock => Color::from_rgb(0.0, 1.0, 0.0),
-      FoxelType::BlueBlock => Color::from_rgb(0.0, 0.0, 1.0),
+      FoxelType::Air => panic!(),
+      &FoxelType::ColorBlock(r, g, b) => Color::from_rgba8(r, g, b, 255),
     }
   }
 }

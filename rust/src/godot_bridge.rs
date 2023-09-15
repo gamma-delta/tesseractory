@@ -21,6 +21,11 @@ struct TesseractoryWorldHandler {
   canvas_tex: Gd<ImageTexture>,
   #[base]
   base: Base<Node>,
+
+  #[export(range = (0.05, 5.0))]
+  fov: f32,
+  #[export(range = (0.05, 5.0))]
+  focal_dist: f32,
 }
 
 #[godot_api]
@@ -40,10 +45,19 @@ impl NodeVirtual for TesseractoryWorldHandler {
       game,
       canvas,
       canvas_tex,
+
+      fov: 0.1,
+      focal_dist: 0.7,
     }
   }
 
   fn process(&mut self, delta: f64) {
+    let cfg = GodotEditorConfig {
+      fov: self.fov / 10_000.0,
+      focal_dist: self.focal_dist / 100.0,
+    };
+    self.game.update(cfg, delta as f32);
+
     let canvas_wrapper = CanvasWrapper {
       image: &mut self.canvas,
     };
@@ -60,6 +74,11 @@ impl TesseractoryWorldHandler {
   pub fn get_canvas_tex(&self) -> Gd<ImageTexture> {
     self.canvas_tex.share()
   }
+
+  #[func]
+  pub fn debug_string(&self) -> GodotString {
+    self.game.debug_info().into()
+  }
 }
 
 pub struct CanvasWrapper<'a> {
@@ -70,4 +89,10 @@ impl<'a> CanvasWrapper<'a> {
   pub fn set_pixel(&mut self, pos: IVec2, color: Color) {
     self.image.set_pixel(pos.x, pos.y, color);
   }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct GodotEditorConfig {
+  pub fov: f32,
+  pub focal_dist: f32,
 }

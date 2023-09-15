@@ -1,7 +1,8 @@
 use glam::IVec4;
 use itertools::Itertools;
 use tesseractory::{
-  algos,
+  algos::{self, AWFoxelIterElt},
+  math::Axis,
   type_aliases::{UnitVec4, Vec4},
 };
 use wedged::base::Const;
@@ -10,27 +11,32 @@ use wedged::base::Const;
 #[test]
 fn orthagonal() {
   let len = 100;
-  for axis in 0usize..=3 {
-    let start = Vec4::zeroed();
-    let heading = UnitVec4::basis_generic(Const, Const, axis);
+  for offset in [0.0, 0.5] {
+    for axis in 0usize..=3 {
+      let start = Vec4::new(offset, offset, offset, offset);
+      let heading = UnitVec4::basis_generic(Const, Const, axis);
 
-    let line = algos::foxel_iter(start, heading)
-      .map(|it| it.coord)
-      .take(len)
-      .collect_vec();
+      let line = algos::foxel_iter(start, heading).take(len).collect_vec();
 
-    let hopeful_line = (0..len)
-      .map(|n| {
-        let mut v = IVec4::ZERO;
-        v[axis] = n as i32 + 1;
-        v
-      })
-      .collect_vec();
-    if line != hopeful_line {
-      panic!(
-        "failed on axis {} : \ngot: {:?}\nexpected: {:?}\n",
-        axis, line, hopeful_line
-      )
+      let hopeful_line = (0..len)
+        .map(|n| {
+          let mut v = IVec4::ZERO;
+          v[axis] = n as i32 + 1;
+          let norm = Axis::try_from(axis as u8).unwrap();
+          let positive = false;
+          AWFoxelIterElt {
+            coord: v,
+            normal_axis: norm,
+            normal_positive: positive,
+          }
+        })
+        .collect_vec();
+      if line != hopeful_line {
+        panic!(
+          "failed on axis {} : \ngot: {:?}\nexpected: {:?}\n",
+          axis, line, hopeful_line
+        )
+      }
     }
   }
 }
@@ -73,4 +79,30 @@ fn respect_subfoxel() {
     [under_corner.coord, over_corner.coord],
     [IVec4::new(1, 0, 0, 0), IVec4::new(0, 1, 0, 0)]
   );
+}
+
+#[test]
+fn negative_headings() {
+  let line = algos::foxel_iter(
+    Vec4::zeroed(),
+    Vec4::new(-1.0, -0.45, 0.0, 0.0).normalize(),
+  )
+  .take(10)
+  .map(|hit| hit.coord)
+  .collect_vec();
+  assert_eq!(
+    line,
+    vec![
+      IVec4::new(-1, 0, 0, 0),
+      IVec4::new(-1, -1, 0, 0),
+      IVec4::new(-2, -1, 0, 0),
+      IVec4::new(-3, -1, 0, 0),
+      IVec4::new(-3, -2, 0, 0),
+      IVec4::new(-4, -2, 0, 0),
+      IVec4::new(-5, -2, 0, 0),
+      IVec4::new(-5, -3, 0, 0),
+      IVec4::new(-6, -3, 0, 0),
+      IVec4::new(-7, -3, 0, 0),
+    ]
+  )
 }

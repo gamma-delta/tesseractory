@@ -27,31 +27,29 @@ impl AWFoxelIter {
     let steps = IVec4::from_slice(&steps);
 
     // we want 0 => inf here, but .inverse catches that
-    let t_delta = heading.into_iter().map(f32::recip).collect_vec();
+    let t_delta = heading.into_iter().map(|n| n.recip().abs()).collect_vec();
     let t_delta = Vec4::from_slice(&t_delta);
 
-    let cursor = origin.into_iter().map(|n| n.round() as i32).collect_vec();
+    let cursor = origin.into_iter().map(|n| n.floor() as i32).collect_vec();
     let cursor = IVec4::from_slice(&cursor);
 
-    // t_max[x] = min(1 - y.fract(), 1 - z.fract(), 1 - w.fract()) / x
-    // and ditto for the other 3 axes
-    // to avoid typing hell, i have written it like this below
-    // which is a lot more complicated but less horrible to maintain
     let t_max = heading
       .into_iter()
       .enumerate()
       .map(|(axis, head_val)| {
-        use std::cmp::Ordering;
-
-        let subpx = origin[axis].fract();
-        let dist = match head_val.total_cmp(&0.0) {
-          // The heading is perpendicular to this axis, so it will never
-          // breach this hface. so return infinity
-          Ordering::Equal => return f32::INFINITY,
-          Ordering::Less => -subpx,
-          Ordering::Greater => 1.0 - subpx,
+        if head_val == 0.0 {
+          return f32::INFINITY;
         };
-        dist / head_val.abs()
+
+        let origin_val = origin[axis];
+        let dist_to_wall = if steps[axis] > 0 {
+          // Moving in the positive direction
+          1.0 - origin_val.fract()
+        } else {
+          origin_val.fract()
+        };
+
+        dist_to_wall / head_val.abs()
       })
       .collect_vec();
     let t_max = Vec4::from_slice(&t_max);
@@ -81,7 +79,9 @@ impl Iterator for AWFoxelIter {
     self.cursor[min_axis] += self.steps[min_axis];
 
     let normal_axis = Axis::try_from(min_axis as u8).unwrap();
-    let normal_positive = self.steps[min_axis] > 0;
+    // If we are travelling in the positive direction, we are hitting the
+    // negative faces
+    let normal_positive = self.steps[min_axis] < 0;
     Some(AWFoxelIterElt {
       coord: self.cursor,
       normal_axis,
@@ -90,7 +90,7 @@ impl Iterator for AWFoxelIter {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AWFoxelIterElt {
   pub coord: IVec4,
   pub normal_axis: Axis,

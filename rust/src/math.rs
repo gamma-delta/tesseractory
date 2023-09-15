@@ -85,29 +85,6 @@ impl ChunkPos {
   }
 }
 
-#[derive(Debug, CopyGetters)]
-#[getset(get_copy = "pub")]
-pub struct Ray {
-  origin: Vec4,
-  heading: Vec4,
-  /// Some abstract measure of "length along the ray."
-  start: f32,
-  end: f32,
-}
-impl Ray {
-  pub const EPSILON: f32 = 0.0001;
-  pub const INFINITY: f32 = 1_000_000.0;
-
-  pub fn new(origin: Vec4, heading: Vec4) -> Self {
-    Self {
-      origin,
-      heading,
-      start: Ray::EPSILON,
-      end: Ray::INFINITY,
-    }
-  }
-}
-
 /// To make things less arbitrary, I'm declaring X to be "the axis
 /// that gravity goes in," with +X being "up."
 ///
