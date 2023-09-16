@@ -19,6 +19,8 @@ struct TesseractoryWorldHandler {
 
   canvas: Gd<Image>,
   canvas_tex: Gd<ImageTexture>,
+  canvas_scratch: Vec<[f32; 3]>,
+  canvas_scratch_pba: PackedByteArray,
   #[base]
   base: Base<Node>,
 
@@ -32,8 +34,9 @@ struct TesseractoryWorldHandler {
 impl NodeVirtual for TesseractoryWorldHandler {
   fn init(base: Base<Node>) -> Self {
     let canvas =
-      Image::create(640, 480, false, image::Format::FORMAT_RGB8).unwrap();
-    let canvas_tex = ImageTexture::create_from_image(canvas.share()).unwrap();
+      Image::create(640, 480, false, image::Format::FORMAT_RGBF).unwrap();
+    let mut canvas_tex = ImageTexture::new();
+    canvas_tex.set_image(canvas.share());
 
     let camera =
       crate::Camera::new(canvas.get_width() as _, canvas.get_height() as _);
@@ -45,6 +48,8 @@ impl NodeVirtual for TesseractoryWorldHandler {
       game,
       canvas,
       canvas_tex,
+      canvas_scratch: vec![[0.0, 0.0, 0.0]; 640 * 480],
+      canvas_scratch_pba: PackedByteArray::new(),
 
       fov: 0.1,
       focal_dist: 0.7,
@@ -58,11 +63,21 @@ impl NodeVirtual for TesseractoryWorldHandler {
     };
     self.game.update(cfg, delta as f32);
 
-    let canvas_wrapper = CanvasWrapper {
-      image: &mut self.canvas,
-    };
-    self.game.draw_world(canvas_wrapper);
-
+    self.game.draw_world(&mut self.canvas_scratch);
+    let scratch_bytes = bytemuck::cast_slice(self.canvas_scratch.as_slice());
+    self.canvas_scratch_pba.resize(scratch_bytes.len());
+    self
+      .canvas_scratch_pba
+      .as_mut_slice()
+      .copy_from_slice(scratch_bytes);
+    self.canvas.set_data(
+      640,
+      480,
+      false,
+      image::Format::FORMAT_RGBF,
+      // COW, so cloning is ok
+      self.canvas_scratch_pba.clone(),
+    );
     self.canvas_tex.update(self.canvas.share());
   }
 }
@@ -78,16 +93,6 @@ impl TesseractoryWorldHandler {
   #[func]
   pub fn debug_string(&self) -> GodotString {
     self.game.debug_info().into()
-  }
-}
-
-pub struct CanvasWrapper<'a> {
-  image: &'a mut Image,
-}
-
-impl<'a> CanvasWrapper<'a> {
-  pub fn set_pixel(&mut self, pos: IVec2, color: Color) {
-    self.image.set_pixel(pos.x, pos.y, color);
   }
 }
 

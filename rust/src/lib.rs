@@ -12,10 +12,7 @@ use math::{Axis, BlockPos};
 use type_aliases::{GMat4, GVec2, Rotor4};
 use world::{Foxel, World};
 
-use crate::{
-  godot_bridge::CanvasWrapper,
-  type_aliases::{Color, GVec3, GVec4, UnitVec3, Vec3, Vec4},
-};
+use crate::type_aliases::{Color, GVec3, GVec4, UnitVec3, Vec3, Vec4};
 
 pub struct GameState {
   camera: Camera,
@@ -62,9 +59,16 @@ impl GameState {
     self.camera.raw_pos.x += dx * 5.0 * delta;
   }
 
-  pub fn draw_world(&self, mut canvas: CanvasWrapper<'_>) {
-    for y in 0..self.camera.canvas_y {
-      for x in 0..self.camera.canvas_x {
+  pub fn draw_world(&self, canvas: &mut Vec<[f32; 3]>) {
+    use rayon::prelude::*;
+
+    let len = self.camera.canvas_y * self.camera.canvas_x;
+    (0..len)
+      .into_par_iter()
+      .map(|i| {
+        let x = i % self.camera.canvas_x;
+        let y = i / self.camera.canvas_x;
+
         let px = IVec2::new(x as _, y as _);
         let ray = self.camera.world_ray(px);
 
@@ -85,10 +89,9 @@ impl GameState {
         } else {
           Color::from_rgb(0.2, 0.2, 0.2)
         };
-
-        canvas.set_pixel(px, color);
-      }
-    }
+        [color.r, color.g, color.b]
+      })
+      .collect_into_vec(canvas);
   }
 
   pub fn debug_info(&self) -> String {
