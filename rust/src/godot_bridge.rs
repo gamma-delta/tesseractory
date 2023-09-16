@@ -4,7 +4,9 @@ use godot::{
   prelude::*,
 };
 
-use crate::GameState;
+const CANVAS_FORMAT: image::Format = image::Format::FORMAT_RGB8;
+
+use crate::{GameParams, GameState};
 
 struct TesseractoryExtension;
 
@@ -15,55 +17,59 @@ unsafe impl ExtensionLibrary for TesseractoryExtension {}
 #[class(base = Node)]
 #[allow(dead_code)]
 struct TesseractoryWorldHandler {
-  game: GameState,
+  /// Only exists on _ready
+  game: Option<GameState>,
 
   canvas: Gd<Image>,
   canvas_tex: Gd<ImageTexture>,
-  canvas_scratch: Vec<[f32; 3]>,
+  canvas_scratch: Vec<[u8; 3]>,
   canvas_scratch_pba: PackedByteArray,
+
+  #[export]
+  cfg: Option<Gd<Resource>>,
+
   #[base]
   base: Base<Node>,
-
-  #[export(range = (0.05, 5.0))]
-  fov: f32,
-  #[export(range = (0.05, 5.0))]
-  focal_dist: f32,
 }
 
 #[godot_api]
 impl NodeVirtual for TesseractoryWorldHandler {
   fn init(base: Base<Node>) -> Self {
-    let canvas =
-      Image::create(640, 480, false, image::Format::FORMAT_RGBF).unwrap();
+    let canvas = Image::create(640, 480, false, CANVAS_FORMAT).unwrap();
     let mut canvas_tex = ImageTexture::new();
     canvas_tex.set_image(canvas.share());
-
-    let camera =
-      crate::Camera::new(canvas.get_width() as _, canvas.get_height() as _);
-    let game = GameState::new(camera);
 
     Self {
       base,
 
-      game,
+      game: None,
       canvas,
       canvas_tex,
-      canvas_scratch: vec![[0.0, 0.0, 0.0]; 640 * 480],
+      canvas_scratch: vec![[0, 0, 0]; 640 * 480],
       canvas_scratch_pba: PackedByteArray::new(),
 
-      fov: 0.1,
-      focal_dist: 0.7,
+      cfg: None,
     }
   }
 
-  fn process(&mut self, delta: f64) {
-    let cfg = GodotEditorConfig {
-      fov: self.fov / 10_000.0,
-      focal_dist: self.focal_dist / 100.0,
-    };
-    self.game.update(cfg, delta as f32);
+  fn ready(&mut self) {
+    let params = GameParams::load(self.cfg.as_ref().unwrap());
+    self.game = Some(GameState::new(
+      IVec2::new(self.canvas.get_width(), self.canvas.get_height()),
+      params,
+    ));
+  }
 
-    self.game.draw_world(&mut self.canvas_scratch);
+  fn physics_process(&mut self, delta: f64) {
+    self.game.as_mut().unwrap().physics_process(delta as f32);
+  }
+
+  fn process(&mut self, delta: f64) {
+    self
+      .game
+      .as_mut()
+      .unwrap()
+      .draw_world(&mut self.canvas_scratch);
     let scratch_bytes = bytemuck::cast_slice(self.canvas_scratch.as_slice());
     self.canvas_scratch_pba.resize(scratch_bytes.len());
     self
@@ -74,7 +80,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
       640,
       480,
       false,
-      image::Format::FORMAT_RGBF,
+      CANVAS_FORMAT,
       // COW, so cloning is ok
       self.canvas_scratch_pba.clone(),
     );
@@ -92,7 +98,7 @@ impl TesseractoryWorldHandler {
 
   #[func]
   pub fn debug_string(&self) -> GodotString {
-    self.game.debug_info().into()
+    self.game.as_ref().unwrap().debug_info().into()
   }
 }
 

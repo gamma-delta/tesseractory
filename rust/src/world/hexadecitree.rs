@@ -26,10 +26,7 @@ impl Hexadecitree {
 
   pub fn new() -> Self {
     Self {
-      root: TreeLevel {
-        depth: 0,
-        children: TreeContents::Branch(empty_branch()),
-      },
+      root: TreeLevel::Branch(empty_branch()),
     }
   }
 
@@ -73,9 +70,9 @@ fn set_foxel_recurse(
 
   if depth == Hexadecitree::DEPTH - 1 {
     // Bottom of tree
-    let foxels = match &mut tree.children {
-      TreeContents::Leaf(f) => f,
-      TreeContents::Branch(_) => {
+    let foxels = match tree {
+      TreeLevel::Leaf(f) => f,
+      TreeLevel::Branch(_) => {
         panic!("tried to get foxels out of a branch")
       }
     };
@@ -87,9 +84,9 @@ fn set_foxel_recurse(
       Some(extant)
     }
   } else {
-    let branches = match &mut tree.children {
-      TreeContents::Branch(b) => b,
-      TreeContents::Leaf(_) => panic!("tried to get branches out of a leaf"),
+    let branches = match tree {
+      TreeLevel::Branch(b) => b,
+      TreeLevel::Leaf(_) => panic!("tried to get branches out of a leaf"),
     };
 
     match branches[idx] {
@@ -98,14 +95,10 @@ fn set_foxel_recurse(
       }
       None => {
         // Create a new branch
-        let contents = if depth == Hexadecitree::DEPTH - 2 {
-          TreeContents::Leaf(Box::new([Foxel::Air; 16]))
+        let new_level = if depth == Hexadecitree::DEPTH - 2 {
+          TreeLevel::Leaf(Box::new([Foxel::Air; 16]))
         } else {
-          TreeContents::Branch(empty_branch())
-        };
-        let new_level = TreeLevel {
-          depth,
-          children: contents,
+          TreeLevel::Branch(empty_branch())
         };
         let new_level_reborrow = branches[idx].insert(new_level);
         set_foxel_recurse(new_level_reborrow, pos2, foxel, depth + 1, true)
@@ -114,12 +107,7 @@ fn set_foxel_recurse(
   }
 }
 
-struct TreeLevel {
-  depth: usize,
-  children: TreeContents,
-}
-
-enum TreeContents {
+enum TreeLevel {
   Branch(Box<[Option<TreeLevel>; 16]>),
   Leaf(Box<[Foxel; 16]>),
 }
@@ -203,9 +191,9 @@ impl HorribleIndexingGat for IdxRef {
     tree: Self::TreeRef<'a>,
     idx: usize,
   ) -> Result<Option<Self::TreeRef<'a>>, Self::FoxelRef<'a>> {
-    match &tree.children {
-      TreeContents::Branch(b) => Ok(b[idx].as_ref()),
-      TreeContents::Leaf(l) => Err(&l[idx]),
+    match tree {
+      TreeLevel::Branch(b) => Ok(b[idx].as_ref()),
+      TreeLevel::Leaf(l) => Err(&l[idx]),
     }
   }
 }
@@ -219,9 +207,9 @@ impl HorribleIndexingGat for IdxMut {
     tree: Self::TreeRef<'a>,
     idx: usize,
   ) -> Result<Option<Self::TreeRef<'a>>, Self::FoxelRef<'a>> {
-    match &mut tree.children {
-      TreeContents::Branch(b) => Ok(b[idx].as_mut()),
-      TreeContents::Leaf(l) => Err(&mut l[idx]),
+    match tree {
+      TreeLevel::Branch(b) => Ok(b[idx].as_mut()),
+      TreeLevel::Leaf(l) => Err(&mut l[idx]),
     }
   }
 }

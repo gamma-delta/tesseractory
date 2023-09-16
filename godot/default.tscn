@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bipuhyuwlp8gs"]
+[gd_scene load_steps=3 format=3 uid="uid://bipuhyuwlp8gs"]
 
 [ext_resource type="Script" path="res://default.gd" id="1_8wfm5"]
+[ext_resource type="Resource" uid="uid://ifq18qbmmpdm" path="res://config.tres" id="2_2kyj1"]
 
 [node name="Holder" type="Node3D"]
 script = ExtResource("1_8wfm5")
@@ -21,4 +22,4 @@ offset_right = 107.0
 grow_vertical = 2
 
 [node name="TesseractoryWorldHandler" type="TesseractoryWorldHandler" parent="."]
-fov = 0.2
+cfg = ExtResource("2_2kyj1")

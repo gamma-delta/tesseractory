@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="TesserConfig" load_steps=2 format=3 uid="uid://ifq18qbmmpdm"]
+
+[ext_resource type="Script" path="res://scripts/tesser_config.gd" id="1_6kp6e"]
+
+[resource]
+script = ExtResource("1_6kp6e")
+fov = 0.2
+focal_dist = 0.7
+walk_speed = 0.0
+fly_speed = 1.0

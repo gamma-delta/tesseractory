@@ -42,11 +42,11 @@ impl AWFoxelIter {
         };
 
         let origin_val = origin[axis];
-        let dist_to_wall = if steps[axis] > 0 {
-          // Moving in the positive direction
-          1.0 - origin_val.fract()
-        } else {
-          origin_val.fract()
+        let dist_to_wall = match (steps[axis] > 0, origin_val > 0.0) {
+          (true, true) => 1.0 - origin_val.fract(),
+          (true, false) => origin_val.fract().abs(),
+          (false, true) => origin_val.fract(),
+          (false, false) => 1.0 - origin_val.fract().abs(),
         };
 
         dist_to_wall / head_val.abs()
@@ -56,7 +56,7 @@ impl AWFoxelIter {
 
     AWFoxelIter {
       steps,
-      t_delta: t_delta.into_simple(),
+      t_delta,
       cursor,
       t_max,
     }
@@ -78,7 +78,6 @@ impl Iterator for AWFoxelIter {
     self.t_max[min_axis] += self.t_delta[min_axis];
     self.cursor[min_axis] += self.steps[min_axis];
 
-    let normal_axis = Axis::try_from(min_axis as u8).unwrap();
     // If we are travelling in the positive direction, we are hitting the
     // negative faces
     let normal_positive = self.steps[min_axis] < 0;
