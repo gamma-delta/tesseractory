@@ -97,7 +97,8 @@ impl GameState {
   pub fn debug_info(&self) -> String {
     let pos = self.camera.pos();
     let imag = self.camera.imag_axis;
-    format!("pos: {pos}\nimag: {imag:?}")
+    let fps = godot::engine::Engine::singleton().get_frames_per_second();
+    format!("pos: {pos}\nimag: {imag:?}\nfps: {fps:.4}")
   }
 }
 
