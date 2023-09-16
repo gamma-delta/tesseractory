@@ -10,23 +10,22 @@ use godot::prelude::Input;
 use godot_bridge::GodotEditorConfig;
 use math::{Axis, BlockPos};
 use type_aliases::{GMat4, GVec2, Rotor4};
-use wedged::base::One;
-use world::FoxelType;
+use world::{Foxel, World};
 
 use crate::{
   godot_bridge::CanvasWrapper,
   type_aliases::{Color, GVec3, GVec4, UnitVec3, Vec3, Vec4},
-  world::FoxelStore,
 };
 
 pub struct GameState {
   camera: Camera,
-  world: FoxelStore,
+  world: World,
 }
 
 impl GameState {
   pub fn new(camera: Camera) -> Self {
-    let mut world = FoxelStore::new();
+    let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.0).normalize();
+    let mut world = World::new(sun_dir);
     world.setup_sample_scene();
     Self { camera, world }
   }
@@ -64,8 +63,6 @@ impl GameState {
   }
 
   pub fn draw_world(&self, mut canvas: CanvasWrapper<'_>) {
-    let lightdir = GVec4::new(-0.5, 0.4, 0.2, 0.0).normalize();
-
     for y in 0..self.camera.canvas_y {
       for x in 0..self.camera.canvas_x {
         let px = IVec2::new(x as _, y as _);
@@ -73,13 +70,16 @@ impl GameState {
 
         let iter = algos::foxel_iter(self.camera.pos(), ray.normalize());
         let hit = iter.take(10).find_map(|hit| {
-          let foxel = self.world.foxel_at(BlockPos(hit.coord))?;
-          (foxel != FoxelType::Air).then_some((hit, foxel))
+          let foxel = self.world.get_foxel(BlockPos(hit.coord))?;
+          (foxel != Foxel::Air).then_some((hit, foxel))
         });
         let color = if let Some((hit, foxel)) = hit {
           let col = foxel.color();
-          let normal_light =
-            hit.normal().as_vec4().dot(-lightdir).clamp(0.0, 1.0);
+
+          // finally actually using any geometric algebra
+          let norm_dot =
+            hit.normal.into_inner() % -self.world.sun_dir().into_inner();
+          let normal_light = norm_dot[0].clamp(0.0, 1.0);
           let ambient_light = 0.5;
           col * (normal_light * 0.5 + ambient_light).clamp(0.0, 1.0)
         } else {

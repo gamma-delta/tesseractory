@@ -22,12 +22,10 @@ fn orthagonal() {
         .map(|n| {
           let mut v = IVec4::ZERO;
           v[axis] = n as i32 + 1;
-          let norm = Axis::try_from(axis as u8).unwrap();
-          let positive = false;
+
           AWFoxelIterElt {
             coord: v,
-            normal_axis: norm,
-            normal_positive: positive,
+            normal: (Vec4::basis(axis) * -1.0).normalize(),
           }
         })
         .collect_vec();

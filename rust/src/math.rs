@@ -3,10 +3,7 @@
 
 use std::ops::Deref;
 
-use getset::CopyGetters;
 use glam::IVec4;
-
-use crate::{type_aliases::*, world::Chunk};
 
 /// Coordinate of a block
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -23,65 +20,6 @@ impl Deref for BlockPos {
 impl BlockPos {
   pub fn new(x: i32, y: i32, z: i32, w: i32) -> BlockPos {
     Self(IVec4::new(x, y, z, w))
-  }
-
-  /// Return the chunk this block is in
-  pub fn chunk(&self) -> ChunkPos {
-    // Int division rounds towards zero but we want to round towards negative
-    fn convert1(n: i32) -> i32 {
-      if n < 0 {
-        (n / Chunk::BREADTH) - 1
-      } else {
-        n / Chunk::BREADTH
-      }
-    }
-    ChunkPos(IVec4::new(
-      convert1(self.x),
-      convert1(self.y),
-      convert1(self.z),
-      convert1(self.w),
-    ))
-  }
-}
-
-/// Coordinate of a chunk
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct ChunkPos(pub IVec4);
-
-impl Deref for ChunkPos {
-  type Target = IVec4;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-impl ChunkPos {
-  pub fn new(x: i32, y: i32, z: i32, w: i32) -> ChunkPos {
-    Self(IVec4::new(x, y, z, w))
-  }
-
-  pub fn min_block(&self) -> BlockPos {
-    fn convert1(n: i32) -> i32 {
-      let offset = if n < 0 { 1 } else { 0 };
-      n * Chunk::BREADTH + offset
-    }
-    BlockPos(IVec4::new(
-      convert1(self.x),
-      convert1(self.y),
-      convert1(self.z),
-      convert1(self.w),
-    ))
-  }
-
-  /// If the pos is in this chunk, return its offset
-  pub fn contained_offset(&self, pos: BlockPos) -> Option<IVec4> {
-    let pos_chunk = pos.chunk();
-    if pos_chunk != *self {
-      None
-    } else {
-      Some(pos.0 - self.min_block().0)
-    }
   }
 }
 

@@ -82,28 +82,22 @@ impl Iterator for AWFoxelIter {
     // If we are travelling in the positive direction, we are hitting the
     // negative faces
     let normal_positive = self.steps[min_axis] < 0;
+    let normal = {
+      let mut m = Vec4::zeroed();
+      m[min_axis] = if normal_positive { 1.0 } else { -1.0 };
+      m.normalize()
+    };
     Some(AWFoxelIterElt {
       coord: self.cursor,
-      normal_axis,
-      normal_positive,
+      normal,
     })
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AWFoxelIterElt {
   pub coord: IVec4,
-  pub normal_axis: Axis,
-  pub normal_positive: bool,
-}
-
-impl AWFoxelIterElt {
-  pub fn normal(&self) -> IVec4 {
-    let mut n = IVec4::ZERO;
-    n[self.normal_axis as u8 as usize] =
-      if self.normal_positive { 1 } else { -1 };
-    n
-  }
+  pub normal: UnitVec4,
 }
 
 pub fn foxel_iter(start: Vec4, heading: UnitVec4) -> AWFoxelIter {
