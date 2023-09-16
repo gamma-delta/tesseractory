@@ -13,4 +13,12 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="Label" type="Label" parent="TextureRect"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 107.0
+grow_vertical = 2
+
 [node name="TesseractoryWorldHandler" type="TesseractoryWorldHandler" parent="."]
+fov = 0.2
