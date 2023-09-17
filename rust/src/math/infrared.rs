@@ -103,7 +103,7 @@ impl Rotor4 {
   }
 
   pub fn identity() -> Self {
-    Self::new(0.0, Bivec4::zero())
+    Self::new(1.0, Bivec4::zero())
   }
 
   pub fn mag_sq(&self) -> f32 {
@@ -160,9 +160,8 @@ impl Mul<Vec4> for Rotor4 {
 fn apply_rot_coefficients(b: Bivec4, coeff: [f32; 8], a: Vec4) -> Vec4 {
   let [s, s2, bxy2, bxz2, bxw2, byz2, byw2, bzw2] = coeff;
   // easier to copy-paste code like this
-  let pxyzw = 1.0;
-  let bxyzw = 1.0;
-  let bxyzw2 = 1.0;
+  let pxyzw = 0.0;
+  let bxyzw2 = 0.0;
 
   let x = (2.0 * a.w * b.xw * s
     + 2.0 * a.w * b.xy * b.yw

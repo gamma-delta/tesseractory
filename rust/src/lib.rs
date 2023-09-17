@@ -22,11 +22,11 @@ pub struct GameState {
 
 impl GameState {
   pub fn new(canvas_size: IVec2, params: GameParams) -> Self {
-    let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.0).normalized();
+    let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.1).normalized();
     let mut world = World::new(sun_dir);
     world.setup_sample_scene();
 
-    let player = Player::new(Vec4::new(0.0, -3.0, 0.1, 0.5));
+    let player = Player::new(Vec4::new(0.0, -3.0, 0.001, 0.5));
 
     Self {
       world,
@@ -82,12 +82,12 @@ impl GameState {
 
   fn world_ray(&self, px: IVec2) -> Vec4 {
     let centered = px - self.canvas_size / 2;
-    let centered = Vec2::new(centered.x as _, centered.y as _);
+    let centered = Vec2::from(centered);
     let in_2d = centered * Vec2::broadcast(self.params.fov);
 
     let offset = Vec4::new(-in_2d.y, self.params.focal_dist, -in_2d.x, 0.0);
 
-    offset
+    self.player.look() * offset
   }
 }
 

@@ -44,7 +44,7 @@ impl AWFoxelIter {
           (false, true) => origin_val.fract(),
           (false, false) => 1.0 - origin_val.fract().abs(),
         };
-        let dist_to_wall = if dist_to_wall.abs() < 0.0000001 {
+        let dist_to_wall = if dist_to_wall == 0.0 {
           1.0
         } else {
           dist_to_wall
