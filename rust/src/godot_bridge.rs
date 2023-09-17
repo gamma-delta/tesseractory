@@ -1,8 +1,8 @@
-use glam::IVec2;
 use godot::{
   engine::{image, Image, ImageTexture, Node},
   prelude::*,
 };
+use ultraviolet::IVec2;
 
 const CANVAS_FORMAT: image::Format = image::Format::FORMAT_RGB8;
 

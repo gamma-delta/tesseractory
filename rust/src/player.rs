@@ -1,15 +1,14 @@
 use crate::{
-  math::Axis,
-  type_aliases::{Rotor4, UnitVec4, Vec4},
+  math::{Axis, Rotor4},
   GameParams,
 };
 use getset::{CopyGetters, Getters};
+use ultraviolet::{Rotor3, Vec4};
 
 #[derive(Debug, CopyGetters, Getters)]
 pub struct Player {
   #[getset(get_copy = "pub")]
   pos: Vec4,
-  /// I would use a rotor but the rotors are slow(tor)
   #[getset(get_copy = "pub")]
   look: Rotor4,
   #[getset(get_copy = "pub")]
@@ -18,8 +17,7 @@ pub struct Player {
 
 impl Player {
   pub fn new(pos: Vec4) -> Self {
-    let x = Vec4::basis(0);
-    let look = x.rot_to(x); // zero rotor
+    let look = Rotor4::identity();
     Self {
       pos,
       look,

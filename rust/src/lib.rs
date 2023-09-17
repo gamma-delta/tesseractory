@@ -3,18 +3,14 @@ pub mod extensions;
 pub mod godot_bridge;
 pub mod math;
 pub mod player;
-pub mod type_aliases;
 pub mod world;
 
 use extensions::GodotObjectExt;
-use glam::IVec2;
-use godot::prelude::{Gd, Input, RefCounted, Resource};
+use godot::prelude::{Color, Gd, Resource};
 use math::BlockPos;
 use player::Player;
-use type_aliases::GVec2;
+use ultraviolet::{IVec2, Vec2, Vec4};
 use world::{Foxel, World};
-
-use crate::type_aliases::{Color, Vec4};
 
 pub struct GameState {
   world: World,
@@ -26,11 +22,11 @@ pub struct GameState {
 
 impl GameState {
   pub fn new(canvas_size: IVec2, params: GameParams) -> Self {
-    let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.0).normalize();
+    let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.0).normalized();
     let mut world = World::new(sun_dir);
     world.setup_sample_scene();
 
-    let player = Player::new(Vec4::new(0.0, -3.0, 0.0, 0.5));
+    let player = Player::new(Vec4::new(0.0, -3.0, 0.1, 0.5));
 
     Self {
       world,
@@ -57,18 +53,16 @@ impl GameState {
         let px = IVec2::new(x as _, y as _);
         let ray = self.world_ray(px);
 
-        let iter = algos::foxel_iter(self.player.pos(), ray.normalize());
-        let hit = iter.take(10).find_map(|hit| {
+        let iter = algos::foxel_iter(self.player.pos(), ray);
+        let hit = iter.take(20).find_map(|hit| {
           let foxel = self.world.get_foxel(BlockPos(hit.coord))?;
           (foxel != Foxel::Air).then_some((hit, foxel))
         });
         let color = if let Some((hit, foxel)) = hit {
           let col = foxel.color();
 
-          // finally actually using any geometric algebra
-          let norm_dot =
-            hit.normal.into_inner() % -self.world.sun_dir().into_inner();
-          let normal_light = norm_dot[0].clamp(0.0, 1.0);
+          let norm_dot = hit.normal.dot(-self.world.sun_dir());
+          let normal_light = norm_dot.clamp(0.0, 1.0);
           let ambient_light = 0.5;
           col * (normal_light * 0.5 + ambient_light).clamp(0.0, 1.0)
         } else {
@@ -83,17 +77,17 @@ impl GameState {
     let pos = self.player.pos();
     let imag = self.player.imag_axis();
     let fps = godot::engine::Engine::singleton().get_frames_per_second();
-    format!("pos: {pos}\nimag: {imag:?}\nfps: {fps:.4}")
+    format!("pos: {pos:?}\nimag: {imag:?}\nfps: {fps:.4}")
   }
 
   fn world_ray(&self, px: IVec2) -> Vec4 {
     let centered = px - self.canvas_size / 2;
-    let centered = GVec2::new(centered.x as _, centered.y as _);
-    let in_2d = centered * GVec2::splat(self.params.fov);
+    let centered = Vec2::new(centered.x as _, centered.y as _);
+    let in_2d = centered * Vec2::broadcast(self.params.fov);
 
     let offset = Vec4::new(-in_2d.y, self.params.focal_dist, -in_2d.x, 0.0);
 
-    self.player.look().rot(offset)
+    offset
   }
 }
 

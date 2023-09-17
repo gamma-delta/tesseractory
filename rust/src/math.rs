@@ -1,9 +1,9 @@
-//! Glam is just here for the IVec4s and quick dirty math internal to functions;
-//! everything else uses wedged
+mod infrared;
+
+pub use infrared::*;
+use ultraviolet::{IVec4, Vec4};
 
 use std::ops::Deref;
-
-use glam::IVec4;
 
 /// Coordinate of a block
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -34,4 +34,11 @@ pub enum Axis {
   Y,
   Z,
   W,
+}
+
+#[inline]
+pub fn basis4(idx: usize) -> Vec4 {
+  let mut v = Vec4::zero();
+  v[idx] = 1.0;
+  v
 }

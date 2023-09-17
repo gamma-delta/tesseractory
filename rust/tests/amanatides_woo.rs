@@ -1,11 +1,9 @@
-use glam::IVec4;
 use itertools::Itertools;
 use tesseractory::{
   algos::{self, AWFoxelIterElt},
-  math::Axis,
-  type_aliases::{UnitVec4, Vec4},
+  math::{basis4, Axis},
 };
-use wedged::base::Const;
+use ultraviolet::{IVec4, Vec4};
 
 /// Make sure that just going along a given axis works
 #[test]
@@ -13,19 +11,19 @@ fn orthagonal() {
   let len = 100;
   for offset in [0.0, 0.5] {
     for axis in 0usize..=3 {
-      let start = Vec4::new(offset, offset, offset, offset);
-      let heading = UnitVec4::basis_generic(Const, Const, axis);
+      let start = Vec4::broadcast(offset);
+      let heading = basis4(axis);
 
       let line = algos::foxel_iter(start, heading).take(len).collect_vec();
 
       let hopeful_line = (0..len)
         .map(|n| {
-          let mut v = IVec4::ZERO;
+          let mut v = IVec4::zero();
           v[axis] = n as i32 + 1;
 
           AWFoxelIterElt {
             coord: v,
-            normal: (Vec4::basis(axis) * -1.0).normalize(),
+            normal: basis4(axis) * -1.0,
           }
         })
         .collect_vec();
@@ -45,7 +43,7 @@ fn pbt_no_jumps() {
   let len = 100;
 
   let start = Vec4::new(0.7, -0.6, 0.0, -0.4);
-  let heading = Vec4::new(1.0, 2.0, -3.0, 4.0).normalize();
+  let heading = Vec4::new(1.0, 2.0, -3.0, 4.0).normalized();
   let line = algos::foxel_iter(start, heading)
     .map(|it| it.coord)
     .take(len)
@@ -54,15 +52,15 @@ fn pbt_no_jumps() {
   for window in line.windows(2) {
     let &[a, b] = window else { unreachable!() };
     let diff = a - b;
-    if diff.length_squared() != 1 {
-      panic!("{} - {} = {}, not len 1", a, b, diff);
+    if diff.mag_sq() != 1 {
+      panic!("{:?} - {:?} = {:?}, not len 1", a, b, diff);
     }
   }
 }
 
 #[test]
 fn respect_subfoxel() {
-  let heading = Vec4::new(1.0, 1.0, 0.0, 0.0).normalize();
+  let heading = Vec4::new(1.0, 1.0, 0.0, 0.0).normalized();
 
   let under_corner = algos::foxel_iter(Vec4::new(0.1, 0.0, 0.0, 0.0), heading)
     .next()
@@ -82,8 +80,8 @@ fn respect_subfoxel() {
 #[test]
 fn negative_headings() {
   let line = algos::foxel_iter(
-    Vec4::zeroed(),
-    Vec4::new(-1.0, -0.45, 0.0, 0.0).normalize(),
+    Vec4::zero(),
+    Vec4::new(-1.0, -0.49, 0.0, 0.0).normalized(),
   )
   .take(10)
   .map(|hit| hit.coord)

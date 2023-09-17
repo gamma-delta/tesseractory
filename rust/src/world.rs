@@ -1,11 +1,10 @@
 mod hexadecitree;
 
 use getset::{CopyGetters, Getters};
+use godot::prelude::Color;
+use ultraviolet::Vec4;
 
-use crate::{
-  math::BlockPos,
-  type_aliases::{Color, UnitVec4, Vec4},
-};
+use crate::math::BlockPos;
 
 pub use self::hexadecitree::Hexadecitree;
 
@@ -14,11 +13,11 @@ pub struct World {
   #[getset(get = "pub")]
   foxels: Hexadecitree,
   #[getset(get_copy = "pub")]
-  sun_dir: UnitVec4,
+  sun_dir: Vec4,
 }
 
 impl World {
-  pub fn new(sun_dir: UnitVec4) -> World {
+  pub fn new(sun_dir: Vec4) -> World {
     let foxels = Hexadecitree::new();
     Self { foxels, sun_dir }
   }

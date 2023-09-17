@@ -8,7 +8,7 @@ All other layers just use bitmasking. `WZYX` where X is LSB
 
 */
 
-use glam::IVec4;
+use ultraviolet::IVec4;
 
 use crate::math::BlockPos;
 
@@ -113,8 +113,11 @@ enum TreeLevel {
 }
 
 fn is_block_in_range(pos: BlockPos) -> bool {
-  pos.0.cmple(IVec4::splat(Hexadecitree::MAX_COORD)).all()
-    && pos.cmpge(IVec4::splat(Hexadecitree::MIN_COORD)).all()
+  pos
+    .0
+    .as_array()
+    .into_iter()
+    .all(|n| (Hexadecitree::MIN_COORD..=Hexadecitree::MAX_COORD).contains(&n))
 }
 
 /// Return the index in the children, and the next "block pos"
@@ -126,12 +129,17 @@ fn step_down_pos(pos: IVec4, depth: usize) -> (u8, IVec4) {
   );
 
   if depth == 0 {
-    let positive = pos.cmpge(IVec4::ZERO);
-    (positive.bitmask() as u8, pos.abs())
+    let positive = ((pos.x >= 0) as u8)
+      | ((pos.y >= 0) as u8) << 1
+      | ((pos.z >= 0) as u8) << 2
+      | ((pos.w >= 0) as u8) << 3;
+    (positive, pos.abs())
   } else {
-    let one_bits = pos & 1;
-    let one_bits_bvec = one_bits.cmpne(IVec4::ZERO);
-    (one_bits_bvec.bitmask() as u8, pos >> 1)
+    let one_bits = ((pos.x & 1 != 0) as u8)
+      | ((pos.y & 1 != 0) as u8) << 1
+      | ((pos.z & 1 != 0) as u8) << 2
+      | ((pos.w & 1 != 0) as u8) << 3;
+    (one_bits, pos / 2) // shl 1
   }
 }
 
