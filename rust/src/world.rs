@@ -1,12 +1,8 @@
-mod hexadecitree;
-
 use getset::{CopyGetters, Getters};
 use godot::prelude::Color;
 use ultraviolet::Vec4;
 
-use crate::math::BlockPos;
-
-pub use self::hexadecitree::Hexadecitree;
+use crate::math::{hexadecitree::Hexadecitree, BlockPos};
 
 #[derive(CopyGetters, Getters)]
 pub struct World {

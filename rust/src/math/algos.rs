@@ -3,6 +3,8 @@ use ultraviolet::{IVec4, Vec4};
 
 use crate::math::basis4;
 
+use super::hexadecitree;
+
 /// https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3443&rep=rep1&type=pdf
 #[derive(Debug, Clone)]
 pub struct AWFoxelIter {
@@ -86,8 +88,4 @@ impl Iterator for AWFoxelIter {
 pub struct AWFoxelIterElt {
   pub coord: IVec4,
   pub normal: Vec4,
-}
-
-pub fn foxel_iter(start: Vec4, heading: Vec4) -> AWFoxelIter {
-  AWFoxelIter::new(start, heading.normalized())
 }

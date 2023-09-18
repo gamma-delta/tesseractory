@@ -1,4 +1,3 @@
-pub mod algos;
 pub mod extensions;
 pub mod godot_bridge;
 pub mod math;
@@ -7,10 +6,11 @@ pub mod world;
 
 use extensions::GodotObjectExt;
 use godot::prelude::{Color, Gd, Resource};
-use math::BlockPos;
 use player::Player;
 use ultraviolet::{IVec2, Vec2, Vec4};
 use world::{Foxel, World};
+
+use crate::math::hexadecitree::iter::TreeIter;
 
 pub struct GameState {
   world: World,
@@ -53,9 +53,9 @@ impl GameState {
         let px = IVec2::new(x as _, y as _);
         let ray = self.world_ray(px);
 
-        let iter = algos::foxel_iter(self.player.pos(), ray);
+        let iter = TreeIter::new(self.player.pos(), ray);
         let hit = iter.take(20).find_map(|hit| {
-          let foxel = self.world.get_foxel(BlockPos(hit.coord))?;
+          let foxel = self.world.get_foxel(hit.pos)?;
           (foxel != Foxel::Air).then_some((hit, foxel))
         });
         let color = if let Some((hit, foxel)) = hit {

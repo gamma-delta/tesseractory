@@ -24,3 +24,18 @@ impl GodotObjectExt for godot::engine::Object {
     }
   }
 }
+
+pub trait F32Ext {
+  /// Signum but it doesn't fucking return 1 on 0
+  fn good_sign(self) -> f32;
+}
+
+impl F32Ext for f32 {
+  fn good_sign(self) -> f32 {
+    if self == 0.0 {
+      0.0
+    } else {
+      self.signum()
+    }
+  }
+}
