@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use ultraviolet::{IVec4, Vec4};
 
 use crate::{extensions::F32Ext, math::BlockPos};
