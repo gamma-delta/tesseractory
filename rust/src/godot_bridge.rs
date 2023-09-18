@@ -6,7 +6,7 @@ use ultraviolet::IVec2;
 
 const CANVAS_FORMAT: image::Format = image::Format::FORMAT_RGB8;
 
-use crate::{GameParams, GameState};
+use crate::{GameParams, WorldState};
 
 struct TesseractoryExtension;
 
@@ -18,7 +18,7 @@ unsafe impl ExtensionLibrary for TesseractoryExtension {}
 #[allow(dead_code)]
 struct TesseractoryWorldHandler {
   /// Only exists on _ready
-  game: Option<GameState>,
+  world_state: Option<WorldState>,
 
   canvas: Gd<Image>,
   canvas_tex: Gd<ImageTexture>,
@@ -42,7 +42,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
     Self {
       base,
 
-      game: None,
+      world_state: None,
       canvas,
       canvas_tex,
       canvas_scratch: vec![[0, 0, 0]; 640 * 480],
@@ -54,19 +54,23 @@ impl NodeVirtual for TesseractoryWorldHandler {
 
   fn ready(&mut self) {
     let params = GameParams::load(self.cfg.as_ref().unwrap());
-    self.game = Some(GameState::new(
+    self.world_state = Some(WorldState::new(
       IVec2::new(self.canvas.get_width(), self.canvas.get_height()),
       params,
     ));
   }
 
   fn physics_process(&mut self, delta: f64) {
-    self.game.as_mut().unwrap().physics_process(delta as f32);
+    self
+      .world_state
+      .as_mut()
+      .unwrap()
+      .physics_process(delta as f32);
   }
 
   fn process(&mut self, delta: f64) {
     self
-      .game
+      .world_state
       .as_mut()
       .unwrap()
       .draw_world(&mut self.canvas_scratch);
@@ -98,7 +102,7 @@ impl TesseractoryWorldHandler {
 
   #[func]
   pub fn debug_string(&self) -> GodotString {
-    self.game.as_ref().unwrap().debug_info().into()
+    self.world_state.as_ref().unwrap().debug_info().into()
   }
 }
 

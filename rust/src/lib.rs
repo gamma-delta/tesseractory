@@ -13,7 +13,7 @@ use world::{Foxel, World};
 
 use crate::math::hexadecitree::iter::TreeIter;
 
-pub struct GameState {
+pub struct WorldState {
   world: World,
   player: Player,
   canvas_size: IVec2,
@@ -21,7 +21,7 @@ pub struct GameState {
   params: GameParams,
 }
 
-impl GameState {
+impl WorldState {
   pub fn new(canvas_size: IVec2, params: GameParams) -> Self {
     let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.1).normalized();
     let mut world = World::new(sun_dir);
