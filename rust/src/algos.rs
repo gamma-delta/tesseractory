@@ -38,19 +38,14 @@ impl AWFoxelIter {
         };
 
         let origin_val = origin[axis];
-        let dist_to_wall = match (steps[axis] > 0, origin_val > 0.0) {
-          (true, true) => 1.0 - origin_val.fract(),
-          (true, false) => origin_val.fract().abs(),
-          (false, true) => origin_val.fract(),
-          (false, false) => 1.0 - origin_val.fract().abs(),
-        };
-        let dist_to_wall = if dist_to_wall == 0.0 {
-          1.0
+        let real_wall_pos = if head_val > 0.0 {
+          origin_val.floor() + 1.0
         } else {
-          dist_to_wall
+          origin_val.ceil() - 1.0
         };
+        let dist_to_wall = origin_val - real_wall_pos;
 
-        dist_to_wall / head_val.abs()
+        dist_to_wall.abs() / head_val.abs()
       })
       .collect_vec();
     let t_max = t_max.try_into().unwrap();
