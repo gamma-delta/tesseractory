@@ -10,6 +10,8 @@ pub struct TreeIter {
 
   cursor: IVec4,
   signums: IVec4,
+
+  cursor_offset: IVec4,
 }
 
 impl TreeIter {
@@ -19,13 +21,13 @@ impl TreeIter {
 
     let mut cursor = IVec4::zero();
     for axis in 0..4 {
-      let v = if dir[axis] > 0.0 {
-        start[axis].floor()
-      } else {
-        start[axis].ceil()
-      };
-      cursor[axis] = v as i32;
+      let base = start[axis].floor() as i32;
+      let delta = if dir[axis] < 0.0 { 1 } else { 0 };
+      cursor[axis] = base + delta;
     }
+
+    let cursor_offset = dir.as_array().map(|v| if v < 0.0 { -1 } else { 0 });
+    let cursor_offset = IVec4::from(cursor_offset);
 
     let dir_recip = Vec4::one() / dir;
     let slope_something = -start * dir_recip;
@@ -35,6 +37,7 @@ impl TreeIter {
       slope_something,
       cursor,
       signums,
+      cursor_offset,
     }
   }
 }
@@ -49,16 +52,14 @@ impl Iterator for TreeIter {
     let exit_times = exit_poses.mul_add(self.dir_recip, self.slope_something);
     let exit_time = exit_times.component_min();
     // ugh
-    let min_time_map = exit_times
-      .as_array()
-      .map(|v| ((v - exit_time).abs() < 0.00001) as i32);
+    let min_time_map = exit_times.as_array().map(|v| (v == exit_time) as i32);
     let min_time_map = IVec4::from(min_time_map);
     let cursor_inc = min_time_map * self.signums;
 
     self.cursor += cursor_inc;
 
     Some(IterItem {
-      pos: BlockPos(self.cursor),
+      pos: BlockPos(self.cursor + self.cursor_offset),
       normal: -Vec4::from(cursor_inc),
     })
   }
