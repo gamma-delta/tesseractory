@@ -19,23 +19,12 @@ impl TreeIter {
 
     let mut cursor = IVec4::zero();
     for axis in 0..4 {
-      // Flooring always goes to the smallest xyzw
-      // But, we want the start cursor point to be the corner furthest
-      // from the ray path.
-      // This way the cursor starts surrounding the start pos.
-      // If the ray is going positive, then this is all fine, because the
-      // cursor covers from behind it to in front of it ...
-      // but if it's going negative it has to swap.
-      //
-      // I'm not sure how to explain this in a comment, it took me like
-      // half an hour of scribbling on graph paper to figure this one out
-      let axis_aligned_origin = start[axis].fract() == 0.0;
-      let offset = if !axis_aligned_origin && signums[axis] < 0 {
-        1
+      let v = if dir[axis] > 0.0 {
+        start[axis].floor()
       } else {
-        0
+        start[axis].ceil()
       };
-      cursor[axis] = start[axis].floor() as i32 + offset;
+      cursor[axis] = v as i32;
     }
 
     let dir_recip = Vec4::one() / dir;
