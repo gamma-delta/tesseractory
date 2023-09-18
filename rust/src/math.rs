@@ -1,4 +1,3 @@
-pub mod algos;
 pub mod geo;
 pub mod hexadecitree;
 
