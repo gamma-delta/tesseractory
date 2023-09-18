@@ -1,94 +1,4 @@
-use std::ops::{Mul, MulAssign, Neg};
 
-use ultraviolet::Vec4;
-
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Bivec4 {
-  pub xy: f32,
-  pub xz: f32,
-  pub xw: f32,
-  pub yz: f32,
-  pub yw: f32,
-  pub zw: f32,
-}
-
-impl Bivec4 {
-  #[inline]
-  pub const fn new(
-    xy: f32,
-    xz: f32,
-    xw: f32,
-    yz: f32,
-    yw: f32,
-    zw: f32,
-  ) -> Self {
-    Self {
-      xy,
-      xz,
-      xw,
-      yz,
-      yw,
-      zw,
-    }
-  }
-
-  #[inline]
-  pub fn zero() -> Self {
-    Self::new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-  }
-
-  #[inline]
-  pub fn mag_sq(&self) -> f32 {
-    (self.xy * self.xy)
-      + (self.xz * self.xz)
-      + (self.xw * self.xw)
-      + (self.yz * self.yz)
-      + (self.yw * self.yw)
-      + (self.zw * self.zw)
-  }
-
-  #[inline]
-  pub fn mag(&self) -> f32 {
-    self.mag_sq().sqrt()
-  }
-}
-
-impl Neg for Bivec4 {
-  type Output = Self;
-
-  #[inline]
-  fn neg(mut self) -> Self::Output {
-    self.xy = -self.xy;
-    self.xz = -self.xz;
-    self.xw = -self.xw;
-    self.yz = -self.yz;
-    self.yw = -self.yw;
-    self.zw = -self.zw;
-    self
-  }
-}
-
-impl Mul<f32> for Bivec4 {
-  type Output = Self;
-
-  fn mul(self, rhs: f32) -> Self::Output {
-    let mut me = self.clone();
-    me *= rhs;
-    me
-  }
-}
-
-impl MulAssign<f32> for Bivec4 {
-  fn mul_assign(&mut self, rhs: f32) {
-    self.xy *= rhs;
-    self.xz *= rhs;
-    self.xw *= rhs;
-    self.yz *= rhs;
-    self.yw *= rhs;
-    self.zw *= rhs;
-  }
-}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -142,6 +52,12 @@ impl Rotor4 {
       self.bv.zw * self.bv.zw,
     ]
   }
+}
+
+bivec4s! {
+  Bivec4 => f32,
+  Bivec4x4 => f32x4,
+  Bivec4x8 => f32x8
 }
 
 impl Mul<Vec4> for Rotor4 {

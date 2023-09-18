@@ -1,5 +1,5 @@
 use crate::{
-  math::{Axis, Rotor4},
+  math::{geo::Rotor4, Axis},
   GameParams,
 };
 use getset::{CopyGetters, Getters};

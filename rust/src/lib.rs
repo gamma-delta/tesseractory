@@ -6,8 +6,9 @@ pub mod world;
 
 use extensions::GodotObjectExt;
 use godot::prelude::{Color, Gd, Resource};
+use math::geo::Rotor4x8;
 use player::Player;
-use ultraviolet::{IVec2, Vec2, Vec4};
+use ultraviolet::{f32x8, IVec2, Vec2, Vec2x8, Vec4, Vec4x8};
 use world::{Foxel, World};
 
 use crate::math::hexadecitree::iter::TreeIter;
@@ -43,18 +44,36 @@ impl GameState {
   pub fn draw_world(&self, canvas: &mut Vec<[u8; 3]>) {
     use rayon::prelude::*;
 
+    let counting = f32x8::new([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
+    let looks = Rotor4x8::splat(self.player.look());
+
     let len = self.canvas_size.y * self.canvas_size.x;
-    (0..len)
+    let chunked_len = len / 8;
+    debug_assert_eq!(self.canvas_size.y % 8, 0);
+
+    let mut pxs = Vec::new();
+    (0..chunked_len)
       .into_par_iter()
-      .map(|i| {
-        let x = i % self.canvas_size.x;
+      .map(|ci| {
+        let i = ci * 8;
         let y = i / self.canvas_size.x;
+        let base_x = i % self.canvas_size.x;
+        let xs = f32x8::splat(base_x as f32) + counting;
+        Vec2x8::new(xs, f32x8::splat(y as f32))
+      })
+      .collect_into_vec(&mut pxs);
+    let tfed_pxes8 = self.world_rays(&looks, &pxs);
 
-        let px = IVec2::new(x as _, y as _);
-        let ray = self.world_ray(px);
+    let tfed_pxes = tfed_pxes8
+      .into_par_iter()
+      .flat_map_iter(|ray8| transpose_rays(ray8).into_iter())
+      .collect::<Vec<_>>();
 
+    tfed_pxes
+      .into_par_iter()
+      .map(|ray| {
         let iter = TreeIter::new(self.player.pos(), ray);
-        let hit = iter.take(20).find_map(|hit| {
+        let hit = iter.take(10).find_map(|hit| {
           let foxel = self.world.get_foxel(hit.pos)?;
           (foxel != Foxel::Air).then_some((hit, foxel))
         });
@@ -80,15 +99,44 @@ impl GameState {
     format!("pos: {pos:?}\nimag: {imag:?}\nfps: {fps:.4}")
   }
 
-  fn world_ray(&self, px: IVec2) -> Vec4 {
-    let centered = px - self.canvas_size / 2;
-    let centered = Vec2::from(centered);
-    let in_2d = centered * Vec2::broadcast(self.params.fov);
+  fn world_rays(&self, looks: &Rotor4x8, pxs: &[Vec2x8]) -> Vec<Vec4x8> {
+    use rayon::prelude::*;
 
-    let offset = Vec4::new(-in_2d.y, self.params.focal_dist, -in_2d.x, 0.0);
+    let half_canvas = Vec2::from(self.canvas_size / 2);
+    let half_canvas8 = Vec2x8::splat(half_canvas);
 
-    self.player.look() * offset
+    let focal = f32x8::splat(self.params.focal_dist);
+
+    let mut world_poses = pxs
+      .into_par_iter()
+      .map(|&px| {
+        let centered = px - half_canvas8;
+        let in_2d = centered * f32x8::splat(self.params.fov);
+
+        Vec4x8::new(-in_2d.y, focal, -in_2d.x, f32x8::ZERO)
+      })
+      .collect::<Vec<_>>();
+
+    looks.rot_many(&mut world_poses);
+    world_poses
   }
+}
+
+fn transpose_rays(ray8: Vec4x8) -> [Vec4; 8] {
+  let xs = ray8.x.as_array_ref();
+  let ys = ray8.y.as_array_ref();
+  let zs = ray8.z.as_array_ref();
+  let ws = ray8.w.as_array_ref();
+  [
+    Vec4::new(xs[0], ys[0], zs[0], ws[0]),
+    Vec4::new(xs[1], ys[1], zs[1], ws[1]),
+    Vec4::new(xs[2], ys[2], zs[2], ws[2]),
+    Vec4::new(xs[3], ys[3], zs[3], ws[3]),
+    Vec4::new(xs[4], ys[4], zs[4], ws[4]),
+    Vec4::new(xs[5], ys[5], zs[5], ws[5]),
+    Vec4::new(xs[6], ys[6], zs[6], ws[6]),
+    Vec4::new(xs[7], ys[7], zs[7], ws[7]),
+  ]
 }
 
 pub struct GameParams {

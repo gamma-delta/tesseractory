@@ -1,8 +1,7 @@
 pub mod algos;
+pub mod geo;
 pub mod hexadecitree;
-mod infrared;
 
-pub use infrared::*;
 use ultraviolet::{IVec4, Vec4};
 
 use std::ops::Deref;
