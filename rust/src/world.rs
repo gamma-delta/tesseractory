@@ -22,10 +22,14 @@ impl World {
     let f = &mut self.foxels;
     f.set(
       BlockPos::new(0, 0, 0, 0),
+      Foxel::ColorBlock(true, true, true),
+    );
+    f.set(
+      BlockPos::new(1, 0, 0, 0),
       Foxel::ColorBlock(true, false, false),
     );
     f.set(
-      BlockPos::new(1, 3, -2, 0),
+      BlockPos::new(0, 1, 0, 0),
       Foxel::ColorBlock(false, true, false),
     );
     f.set(
@@ -33,14 +37,9 @@ impl World {
       Foxel::ColorBlock(false, false, true),
     );
     f.set(
-      BlockPos::new(0, 1, 0, 0),
-      Foxel::ColorBlock(false, true, true),
+      BlockPos::new(0, 0, 0, 1),
+      Foxel::ColorBlock(true, false, true),
     );
-
-    for w in -3..=3 {
-      let b = (w & 1) == 0;
-      f.set(BlockPos::new(0, 0, -1, w), Foxel::ColorBlock(true, true, b));
-    }
   }
 
   pub fn get_foxel(&self, pos: BlockPos) -> Option<Foxel> {

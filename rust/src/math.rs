@@ -36,6 +36,12 @@ pub enum Axis {
   W,
 }
 
+impl Axis {
+  pub fn basis(self) -> Vec4 {
+    basis4(self as usize)
+  }
+}
+
 #[inline]
 pub fn basis4(idx: usize) -> Vec4 {
   let mut v = Vec4::zero();

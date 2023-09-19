@@ -93,10 +93,9 @@ impl WorldState {
   }
 
   pub fn debug_info(&self) -> String {
-    let pos = self.player.pos();
-    let imag = self.player.imag_axis();
+    let player = &self.player;
     let fps = godot::engine::Engine::singleton().get_frames_per_second();
-    format!("pos: {pos:?}\nimag: {imag:?}\nfps: {fps:.4}")
+    format!("player: {player:#?}\nfps: {fps:.4}")
   }
 
   fn world_rays(&self, looks: &Rotor4x8, pxs: &[Vec2x8]) -> Vec<Vec4x8> {
@@ -144,6 +143,7 @@ pub struct GameParams {
   pub fov: f32,
   pub player_walk_speed: f32,
   pub player_fly_speed: f32,
+  pub look_speed: f32,
 }
 
 impl GameParams {
@@ -153,6 +153,7 @@ impl GameParams {
       fov: cfg.totally::<f32>("fov") / 10_000.0,
       player_walk_speed: cfg.totally("walk_speed"),
       player_fly_speed: cfg.totally("fly_speed"),
+      look_speed: cfg.totally::<f32>("look_speed") / 100.0,
     }
   }
 }
