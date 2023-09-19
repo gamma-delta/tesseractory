@@ -24,22 +24,24 @@ impl World {
       BlockPos::new(0, 0, 0, 0),
       Foxel::ColorBlock(true, true, true),
     );
-    f.set(
-      BlockPos::new(1, 0, 0, 0),
-      Foxel::ColorBlock(true, false, false),
-    );
-    f.set(
-      BlockPos::new(0, 1, 0, 0),
-      Foxel::ColorBlock(false, true, false),
-    );
-    f.set(
-      BlockPos::new(0, 0, 1, 0),
-      Foxel::ColorBlock(false, false, true),
-    );
-    f.set(
-      BlockPos::new(0, 0, 0, 1),
-      Foxel::ColorBlock(true, false, true),
-    );
+    for v in 1..10 {
+      f.set(
+        BlockPos::new(v, 0, 0, 0),
+        Foxel::ColorBlock(true, false, false),
+      );
+      f.set(
+        BlockPos::new(0, v, 0, 0),
+        Foxel::ColorBlock(false, true, false),
+      );
+      f.set(
+        BlockPos::new(0, 0, v, 0),
+        Foxel::ColorBlock(false, false, true),
+      );
+      f.set(
+        BlockPos::new(0, 0, 0, v),
+        Foxel::ColorBlock(true, false, true),
+      );
+    }
   }
 
   pub fn get_foxel(&self, pos: BlockPos) -> Option<Foxel> {
