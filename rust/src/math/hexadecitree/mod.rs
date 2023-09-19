@@ -24,6 +24,7 @@ use crate::Foxel;
 pub struct Hexadecitree {
   /// 0th idx is always the root
   arena: Vec<TreeLevel>,
+  foxel_arena: Vec<Foxel>,
 }
 
 #[derive(Clone, Copy)]
@@ -83,13 +84,8 @@ impl Hexadecitree {
     if !is_block_in_range(pos) {
       None
     } else {
-      let (tree_ref, kid_idx) =
-        find_recurse(&self.arena, TreeRef::root(), pos.0, 0)?;
-      let tree = &self.arena[tree_ref.0 as usize];
-      let TreeLevel::Leaf(ref foxels) = tree else {
-        unreachable!()
-      };
-      Some(foxels[kid_idx as usize])
+      let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
+      Some(self.foxel_arena[idx])
     }
   }
 
@@ -97,13 +93,8 @@ impl Hexadecitree {
     if !is_block_in_range(pos) {
       None
     } else {
-      let (tree_ref, kid_idx) =
-        find_recurse(&self.arena, TreeRef::root(), pos.0, 0)?;
-      let tree = &mut self.arena[tree_ref.0 as usize];
-      let TreeLevel::Leaf(ref mut foxels) = tree else {
-        unreachable!()
-      };
-      Some(&mut foxels[kid_idx as usize])
+      let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
+      Some(&mut self.foxel_arena[idx])
     }
   }
 
@@ -112,17 +103,9 @@ impl Hexadecitree {
     if !is_block_in_range(pos) {
       None
     } else {
-      set_foxel_recurse(
-        &mut self.arena,
-        TreeRef::root(),
-        pos.0,
-        foxel,
-        0,
-        false,
-      )
+      self.set_foxel_recurse(TreeRef::root(), pos.0, foxel, 0, false)
     }
   }
-}
 
   /// Returns an optional ptr to the lowest level.
   ///
@@ -135,8 +118,7 @@ impl Hexadecitree {
   ) -> Option<usize> {
     let (child_idx, pos2) = step_down_pos(pos, depth);
 
-  let old_len = arena.len();
-  let tree = arena.get_mut(tree_ref.0 as usize).unwrap();
+    let tree = self.arena.get(tree_ref.0 as usize).unwrap();
 
     if depth == Hexadecitree::DEPTH - 1 {
       // yes! better find a leaf node here
@@ -190,12 +172,6 @@ impl Hexadecitree {
       } else {
         Some(extant)
       }
-    };
-
-    let extant = std::mem::replace(&mut foxels[child_idx], foxel);
-    if ever_failed {
-      // it'll be air
-      None
     } else {
       match tree {
         TreeLevel::Leaf(_) => panic!("tried to get branches out of a leaf"),
@@ -225,7 +201,8 @@ impl Hexadecitree {
         &mut TreeLevel::Branch(subtree_ptr) => {
           let next_idx = TreeRef(subtree_ptr.0 + child_idx as u32);
 
-        set_foxel_recurse(arena, next_idx, pos2, foxel, depth + 1, ever_failed)
+          self.set_foxel_recurse(next_idx, pos2, foxel, depth + 1, ever_failed)
+        }
       }
     }
   }
