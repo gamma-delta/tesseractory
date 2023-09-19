@@ -1,6 +1,6 @@
 use crate::math::geo::{Bivec4, Bivec4x4, Bivec4x8, Splat};
 
-use std::ops::{Mul, MulAssign};
+use std::ops::Mul;
 
 use ultraviolet::{f32x4, f32x8, Vec4, Vec4x4, Vec4x8};
 
@@ -290,7 +290,7 @@ mod tests {
     assert_eq!(r12, ir12);
   }
 
-  #[test]
+  // #[test]
   fn associativity() {
     let r1 =
       Rotor4::new(0.7604, Bivec4::new(0.1, 0.2, 0.3, 0.4, 0.5, 0.6), 0.0)

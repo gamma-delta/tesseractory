@@ -13,6 +13,6 @@ fn smoke() {
     let pos = BlockPos::new(x, y, z, w);
     h.set(pos, foxel);
     let retrieve = h.get(pos);
-    assert_eq!(retrieve, Some(foxel));
+    assert_eq!(retrieve, Some(foxel), "{:?}", pos);
   }
 }
