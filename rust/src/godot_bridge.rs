@@ -68,7 +68,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
       .physics_process(delta as f32);
   }
 
-  fn process(&mut self, delta: f64) {
+  fn process(&mut self, _delta: f64) {
     self
       .world_state
       .as_mut()

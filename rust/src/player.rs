@@ -9,7 +9,7 @@ use crate::{
 };
 use getset::{CopyGetters, Getters};
 use godot::prelude::Input;
-use ultraviolet::{Rotor3, Vec3, Vec4};
+use ultraviolet::{Vec4};
 
 #[derive(Debug, CopyGetters, Getters)]
 pub struct Player {
