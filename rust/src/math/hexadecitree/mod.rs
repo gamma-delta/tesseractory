@@ -63,7 +63,7 @@ enum TreeLevel {
 }
 
 impl Hexadecitree {
-  pub const DEPTH: usize = 6;
+  pub const DEPTH: usize = 5;
   pub const MAX_COORD: i32 =
     (Self::BRANCH_HYPERSIZE as i32).pow(Self::DEPTH as u32 - 1);
   pub const MIN_COORD: i32 =
@@ -83,30 +83,22 @@ impl Hexadecitree {
   }
 
   pub fn get(&self, pos: BlockPos) -> Option<Foxel> {
-    if !is_block_in_range(pos) {
-      None
-    } else {
-      let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
-      Some(self.foxel_arena[idx])
-    }
+    let idx = self.find_recurse(TreeRef::root(), pos.0, 0).ok()?;
+    Some(self.foxel_arena[idx])
   }
 
   pub fn get_mut(&mut self, pos: BlockPos) -> Option<&mut Foxel> {
-    if !is_block_in_range(pos) {
-      None
-    } else {
-      let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
-      Some(&mut self.foxel_arena[idx])
-    }
+    let idx = self.find_recurse(TreeRef::root(), pos.0, 0).ok()?;
+    Some(&mut self.foxel_arena[idx])
   }
 
   /// Return the previous foxel
   pub fn set(&mut self, pos: BlockPos, foxel: Foxel) -> Option<Foxel> {
-    if !is_block_in_range(pos) {
-      None
-    } else {
-      self.set_foxel_recurse(TreeRef::root(), pos.0, foxel, 0, false)
-    }
+    self.set_foxel_recurse(TreeRef::root(), pos.0, foxel, 0, false)
+  }
+
+  pub fn find_raw(&self, pos: BlockPos) -> Result<usize, usize> {
+    self.find_recurse(TreeRef::root(), pos.0, 0)
   }
 
   pub fn memory(&self) -> usize {
@@ -117,12 +109,18 @@ impl Hexadecitree {
   /// Returns an optional ptr to the lowest level.
   ///
   /// The arena[ptr] will always be a Leaf. Index into it with the returned idx.
+  ///
+  /// On failure, returns the depth it managed to get to
   fn find_recurse(
     &self,
     tree_ref: TreeRef,
     pos: IVec4,
     depth: usize,
-  ) -> Option<usize> {
+  ) -> Result<usize, usize> {
+    if depth == 0 && !is_block_in_range(BlockPos(pos)) {
+      return Err(0);
+    }
+
     let (child_idx, pos2) = step_down_pos(pos, depth);
 
     let tree = self.arena.get(tree_ref.0 as usize).unwrap();
@@ -132,12 +130,13 @@ impl Hexadecitree {
       let TreeLevel::Leaf(foxels) = tree else {
         panic!("tried to get foxels out of a branch node")
       };
-      Some(foxels.idx(child_idx))
+      Ok(foxels.idx(child_idx))
     } else {
       // Indexing down
       let branch_idx = match tree {
         TreeLevel::Branch(b) => b,
-        TreeLevel::Empty => return None,
+        // Failed to find!
+        TreeLevel::Empty => return Err(depth),
         TreeLevel::Leaf(_) => {
           panic!("tried to get branches out of a leaf node")
         }
@@ -156,6 +155,10 @@ impl Hexadecitree {
     depth: usize,
     ever_failed: bool,
   ) -> Option<Foxel> {
+    if depth == 0 && !is_block_in_range(BlockPos(pos)) {
+      return None;
+    }
+
     let (child_idx, pos2) = step_down_pos(pos, depth);
 
     let old_len = self.arena.len();
