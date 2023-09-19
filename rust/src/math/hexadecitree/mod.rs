@@ -64,7 +64,7 @@ enum TreeLevel {
 
 impl Hexadecitree {
   /// The 16th level down (idx 15) is the trees.
-  pub const DEPTH: usize = 16;
+  pub const DEPTH: usize = 10;
   pub const MAX_COORD: i32 = 2i32.pow(Self::DEPTH as u32);
   pub const MIN_COORD: i32 = -2i32.pow(Self::DEPTH as u32) - 1;
 
@@ -105,6 +105,11 @@ impl Hexadecitree {
     } else {
       self.set_foxel_recurse(TreeRef::root(), pos.0, foxel, 0, false)
     }
+  }
+
+  pub fn memory(&self) -> usize {
+    self.arena.capacity() * std::mem::size_of::<TreeLevel>()
+      + self.foxel_arena.capacity() * std::mem::size_of::<Foxel>()
   }
 
   /// Returns an optional ptr to the lowest level.
