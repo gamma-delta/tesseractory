@@ -63,12 +63,14 @@ enum TreeLevel {
 }
 
 impl Hexadecitree {
-  /// The 16th level down (idx 15) is the trees.
-  pub const DEPTH: usize = 10;
-  pub const MAX_COORD: i32 = 2i32.pow(Self::DEPTH as u32);
-  pub const MIN_COORD: i32 = -2i32.pow(Self::DEPTH as u32) - 1;
+  pub const DEPTH: usize = 6;
+  pub const MAX_COORD: i32 =
+    (Self::BRANCH_HYPERSIZE as i32).pow(Self::DEPTH as u32 - 1);
+  pub const MIN_COORD: i32 =
+    -(Self::BRANCH_HYPERSIZE as i32).pow(Self::DEPTH as u32 - 1) - 1;
 
-  pub const CHILDREN: usize = 16; // coincidence
+  pub const BRANCH_HYPERSIZE: usize = 4;
+  pub const CHILDREN: usize = Self::BRANCH_HYPERSIZE.pow(4);
 
   pub fn new() -> Self {
     let root = TreeLevel::Branch(TreeRef(1));
@@ -221,9 +223,19 @@ fn is_block_in_range(pos: BlockPos) -> bool {
     .all(|n| (Hexadecitree::MIN_COORD..=Hexadecitree::MAX_COORD).contains(&n))
 }
 
+/// Step down twice.
+///
+/// Indexing uses all of the byte now. `WXYZWXYZ`, where the lower
+/// happens first.
+fn step_down_pos(pos: IVec4, depth: usize) -> (u8, IVec4) {
+  let (idx1, pos1) = step_down_one(pos, depth);
+  let (idx2, pos2) = step_down_one(pos1, depth);
+  (idx2 << 4 | idx1, pos2)
+}
+
 /// Return the index in the children, and the next "block pos"
 /// to examine.
-fn step_down_pos(pos: IVec4, depth: usize) -> (u8, IVec4) {
+fn step_down_one(pos: IVec4, depth: usize) -> (u8, IVec4) {
   debug_assert!(
     depth < Hexadecitree::DEPTH,
     "tried to iterate too many layers down"

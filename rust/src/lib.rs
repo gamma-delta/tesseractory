@@ -73,7 +73,7 @@ impl WorldState {
       .into_par_iter()
       .map(|ray| {
         let iter = TreeIter::new(self.player.pos(), ray);
-        let hit = iter.take(32).find_map(|hit| {
+        let hit = iter.take(10).find_map(|hit| {
           let foxel = self.world.get_foxel(hit.pos)?;
           (foxel != Foxel::Air).then_some((hit, foxel))
         });

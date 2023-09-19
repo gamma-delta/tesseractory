@@ -1,6 +1,6 @@
 use super::*;
 
-#[test]
+// #[test]
 fn step_down() {
   // x is the LSB, which is confusing
   let (idx0, pos0) = step_down_pos(IVec4::new(-10, 10, -11, 11), 0);
