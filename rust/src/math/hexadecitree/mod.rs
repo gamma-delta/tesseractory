@@ -124,23 +124,16 @@ fn find_recurse(
   pos: IVec4,
   depth: usize,
 ) -> Option<(TreeRef, u8)> {
-  let indent = " ".repeat(depth);
-
   let (child_idx, pos2) = step_down_pos(pos, depth);
   let child_idx = child_idx as usize;
 
   let tree = arena.get(tree_ref.0 as usize).unwrap();
-  println!(
-    "{}: scanning {:?} -> {:?}, idx {}",
-    indent, tree_ref, &tree, child_idx
-  );
 
   if depth == Hexadecitree::DEPTH - 1 {
     // yes! better find a leaf node here
     let TreeLevel::Leaf(ref _foxels) = tree else {
       panic!("tried to get foxels out of a branch node")
     };
-    println!("{}: found foxels at {:?}", indent, tree_ref);
     Some((tree_ref, child_idx as u8))
   } else {
     // Indexing down
@@ -150,7 +143,6 @@ fn find_recurse(
       TreeLevel::Leaf(_) => panic!("tried to get branches out of a leaf node"),
     };
     let next_level_ptr = TreeRef(branch_idx.0 + child_idx as u32);
-    println!("{}: going to {:?}", indent, next_level_ptr);
     find_recurse(arena, next_level_ptr, pos2, depth + 1)
   }
 }
@@ -164,8 +156,6 @@ fn set_foxel_recurse(
   depth: usize,
   ever_failed: bool,
 ) -> Option<Foxel> {
-  let indent = " ".repeat(depth);
-
   let (child_idx, pos2) = step_down_pos(pos, depth);
   let child_idx = child_idx as usize;
 
@@ -183,10 +173,6 @@ fn set_foxel_recurse(
     };
 
     let extant = std::mem::replace(&mut foxels[child_idx], foxel);
-    println!(
-      "{}: found foxel slot {:?}, setting {:?}",
-      indent, extant, foxel
-    );
     if ever_failed {
       // it'll be air
       None
@@ -205,27 +191,20 @@ fn set_foxel_recurse(
           TreeLevel::Empty
         };
         // yes! we can now use the level ptr
-        let new_level_ptr = TreeRef(old_len as u32 + child_idx as u32);
-        *tree = TreeLevel::Branch(new_level_ptr);
+        let span_ptr = TreeRef(old_len as u32);
+        *tree = TreeLevel::Branch(span_ptr);
         // Create the space for the 16 children
         arena.push(new_level);
         arena.extend(
           std::iter::from_fn(|| Some(TreeLevel::Empty))
             .take(Hexadecitree::CHILDREN),
         );
-        println!(
-          "{}: setting {:?} to point to {:?}; {} + {}",
-          indent, tree_ref, new_level_ptr, old_len, child_idx
-        );
+        let new_level_ptr = TreeRef(span_ptr.0 + child_idx as u32);
 
         set_foxel_recurse(arena, new_level_ptr, pos2, foxel, depth + 1, true)
       }
       &mut TreeLevel::Branch(subtree_ptr) => {
         let next_idx = TreeRef(subtree_ptr.0 + child_idx as u32);
-        println!(
-          "{}: found old branch at {:?}; off to {:?} + {} = {:?}",
-          indent, tree_ref, subtree_ptr, child_idx, next_idx,
-        );
 
         set_foxel_recurse(arena, next_idx, pos2, foxel, depth + 1, ever_failed)
       }
