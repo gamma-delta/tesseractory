@@ -15,4 +15,6 @@ fn smoke() {
     let retrieve = h.get(pos);
     assert_eq!(retrieve, Some(foxel), "{:?}", pos);
   }
+
+  // panic!("{} {}", h.branch_count(), h.foxel_count());
 }
