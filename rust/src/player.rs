@@ -100,16 +100,11 @@ impl AxisCamera {
   }
 
   pub fn rotor(&self) -> Rotor4 {
-    let (local_yz, local_xy) = match self.imag_axis {
-      Axis::X => panic!(),
-      Axis::Y => (Bivec4::unit_zw(), Bivec4::unit_xw()),
-      Axis::Z => (Bivec4::unit_xy(), Bivec4::unit_yw()),
-      Axis::W => (Bivec4::unit_yz(), Bivec4::unit_xy()),
-    };
-
-    let yz = Rotor4::from_angle_plane(self.rot_yz, local_yz);
-    let xy = Rotor4::from_angle_plane(self.rot_xy, local_xy);
-    Rotor4::identity() * (yz * xy)
+    let w2imag =
+      Rotor4::from_rotation_between(Axis::W.basis(), self.imag_axis.basis());
+    let local_yz = Rotor4::from_angle_plane(self.rot_yz, Bivec4::unit_yz());
+    let local_xy = Rotor4::from_angle_plane(self.rot_xy, Bivec4::unit_xy());
+    w2imag * local_yz * local_xy
   }
 
   /// Input is local coordinates. Again, X is up, Y is forward, Z is left.
