@@ -9,15 +9,16 @@ All other layers just use bitmasking. `WZYX` where X is LSB
 */
 
 pub mod iter;
+mod reprs;
 
 #[cfg(test)]
 mod tests;
 
 use ultraviolet::IVec4;
 
-use crate::math::BlockPos;
+use crate::{math::BlockPos, Foxel};
 
-use crate::Foxel;
+use reprs::*;
 
 /// To facilitate passing to the gee poo, some memory shenanigans are in order.
 #[derive(Debug)]
@@ -25,31 +26,6 @@ pub struct Hexadecitree {
   /// 0th idx is always the root
   arena: Vec<TreeLevel>,
   foxel_arena: Vec<Foxel>,
-}
-
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-struct TreeRef(u32);
-
-impl TreeRef {
-  fn root() -> Self {
-    Self(0)
-  }
-}
-
-impl std::fmt::Debug for TreeRef {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.0)
-  }
-}
-
-#[derive(Debug, Clone, Copy)]
-struct FoxelSpanRef(u32);
-
-impl FoxelSpanRef {
-  fn idx(self, child_idx: u8) -> usize {
-    self.0 as usize + child_idx as usize
-  }
 }
 
 #[derive(Debug)]
@@ -73,7 +49,7 @@ impl Hexadecitree {
   pub const CHILDREN: usize = Self::BRANCH_HYPERSIZE.pow(4);
 
   pub fn new() -> Self {
-    let root = TreeLevel::Branch(TreeRef(1));
+    let root = TreeLevel::Branch(TreeRef::from_idx(1));
     let mut arena = vec![root];
     for _ in 0..Self::CHILDREN {
       arena.push(TreeLevel::Empty);
@@ -125,7 +101,7 @@ impl Hexadecitree {
   ) -> Option<usize> {
     let (child_idx, pos2) = step_down_pos(pos, depth);
 
-    let tree = self.arena.get(tree_ref.0 as usize).unwrap();
+    let tree = self.arena.get(tree_ref.idx()).unwrap();
 
     if depth == Hexadecitree::DEPTH - 1 {
       // yes! better find a leaf node here
@@ -142,7 +118,7 @@ impl Hexadecitree {
           panic!("tried to get branches out of a leaf node")
         }
       };
-      let next_level_ptr = TreeRef(branch_idx.0 + child_idx as u32);
+      let next_level_ptr = TreeRef::from_idx(branch_idx.child_idx(child_idx));
       self.find_recurse(next_level_ptr, pos2, depth + 1)
     }
   }
@@ -159,7 +135,7 @@ impl Hexadecitree {
     let (child_idx, pos2) = step_down_pos(pos, depth);
 
     let old_len = self.arena.len();
-    let tree = self.arena.get_mut(tree_ref.0 as usize).unwrap();
+    let tree = self.arena.get_mut(tree_ref.idx()).unwrap();
 
     if depth == Hexadecitree::DEPTH - 1 {
       // Bottom of tree
@@ -186,14 +162,16 @@ impl Hexadecitree {
           // Create a new branch
           let new_level = if depth == Hexadecitree::DEPTH - 2 {
             let len = self.foxel_arena.len();
-            self.foxel_arena.extend_from_slice(&[Foxel::Air; 16]);
-            TreeLevel::Leaf(FoxelSpanRef(len as _))
+            self
+              .foxel_arena
+              .extend_from_slice(&[Foxel::Air; Hexadecitree::CHILDREN]);
+            TreeLevel::Leaf(FoxelSpanRef::from_idx(len as _))
           } else {
             // This has no children, yet
             TreeLevel::Empty
           };
           // yes! we can now use the level ptr
-          let span_ptr = TreeRef(old_len as u32);
+          let span_ptr = TreeRef::from_idx(old_len);
           *tree = TreeLevel::Branch(span_ptr);
           // Create the space for the 16 children
           self.arena.push(new_level);
@@ -201,12 +179,12 @@ impl Hexadecitree {
             std::iter::from_fn(|| Some(TreeLevel::Empty))
               .take(Hexadecitree::CHILDREN),
           );
-          let new_level_ptr = TreeRef(span_ptr.0 + child_idx as u32);
+          let new_level_ptr = TreeRef::from_idx(span_ptr.child_idx(child_idx));
 
           self.set_foxel_recurse(new_level_ptr, pos2, foxel, depth + 1, true)
         }
         &mut TreeLevel::Branch(subtree_ptr) => {
-          let next_idx = TreeRef(subtree_ptr.0 + child_idx as u32);
+          let next_idx = TreeRef::from_idx(subtree_ptr.child_idx(child_idx));
 
           self.set_foxel_recurse(next_idx, pos2, foxel, depth + 1, ever_failed)
         }
