@@ -1,6 +1,10 @@
 //! GPU-friendly representations of stuff
 
-/*
+use super::Hexadecitree;
+
+const HIGH_BIT: u32 = 1 << 31;
+
+#[derive(Debug)]
 pub(super) enum TreeLevel {
   Empty,
   /// Indices into the branch arena.
@@ -9,24 +13,46 @@ pub(super) enum TreeLevel {
   Leaf(FoxelSpanRef),
 }
 
-#[derive(Clone, Copy)]
+impl TreeLevel {
+  pub fn enc(&self) -> TreeLevelInner {
+    TreeLevelInner(match self {
+      TreeLevel::Empty => 0,
+      TreeLevel::Branch(TreeRef(x)) => {
+        debug_assert_eq!(x & HIGH_BIT, 0);
+        x & (!HIGH_BIT)
+      }
+      &TreeLevel::Leaf(FoxelSpanRef(x)) => HIGH_BIT | x as u32,
+    })
+  }
+}
+
+/// Compressed version of TreeLevel.
+///
+/// - `0b00000000...` : `TreeLevel::Empty`
+/// - `0b0XXXXXXX...` : `TreeLevel::Branch`
+/// - `0b1XXXXXXX...` : `TreeLevel::Leaf` (although the high bits are ignored)
+#[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub(super) struct TreeLevelInner(u32);
 
 impl TreeLevelInner {
-    pub fn friendly(self)     -> TreeLevel {
-        let x = self.0;
+  pub fn friendly(self) -> TreeLevel {
+    let x = self.0;
 
-        if x == 0 {
-            TreeLevel::Empty
-        } else if {
-
-        }
+    // The root node will never be stored in the tree, so we can use
+    // 0 for empty
+    if x == 0 {
+      TreeLevel::Empty
+    } else if (x & HIGH_BIT) == 0 {
+      let unmasked = x & !HIGH_BIT;
+      TreeLevel::Branch(TreeRef(unmasked))
+    } else {
+      // the high bit MUST be set.
+      let squished = (x & 0xFFFF) as u16;
+      TreeLevel::Leaf(FoxelSpanRef(squished))
     }
+  }
 }
-*/
-
-use super::Hexadecitree;
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
