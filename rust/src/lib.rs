@@ -93,9 +93,25 @@ impl WorldState {
   }
 
   pub fn debug_info(&self) -> String {
-    let player = &self.player;
-    let fps = godot::engine::Engine::singleton().get_frames_per_second();
-    format!("player: {player:#?}\nfps: {fps:.4}")
+    let mut w = String::new();
+
+    w += &format!(
+      "FPS: {}\n",
+      godot::engine::Engine::singleton().get_frames_per_second()
+    );
+
+    self.player.debug_info(&mut w);
+
+    w += &format!(
+      "Tree size : {} MB\n",
+      self.world.foxels().memory() as f32 / 1_000_000.0
+    );
+    let (blen, bcap) = self.world.foxels().branch_sizes();
+    w += &format!("Branch len/cap: {blen}/{bcap}\n");
+    let (flen, fcap) = self.world.foxels().foxel_sizes();
+    w += &format!("Foxel len/cap: {flen}/{fcap}\n");
+
+    w
   }
 
   fn world_rays(&self, looks: &Rotor4x8, pxs: &[Vec2x8]) -> Vec<Vec4x8> {

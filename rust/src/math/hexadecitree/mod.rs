@@ -71,8 +71,18 @@ impl Hexadecitree {
     }
   }
 
+  /// `(len, cap)`
+  pub fn branch_sizes(&self) -> (usize, usize) {
+    (self.arena.len(), self.arena.capacity())
+  }
+
+  /// `(len, cap)`
+  pub fn foxel_sizes(&self) -> (usize, usize) {
+    (self.foxel_arena.len(), self.foxel_arena.capacity())
+  }
+
   pub fn memory(&self) -> usize {
-    self.arena.capacity() * std::mem::size_of::<TreeLevel>()
+    self.arena.capacity() * std::mem::size_of::<TreeLevelInner>()
       + self.foxel_arena.capacity() * std::mem::size_of::<Foxel>()
   }
 

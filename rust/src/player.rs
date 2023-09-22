@@ -9,7 +9,7 @@ use crate::{
 };
 use getset::{CopyGetters, Getters};
 use godot::prelude::Input;
-use ultraviolet::{Vec4};
+use ultraviolet::Vec4;
 
 #[derive(Debug, CopyGetters, Getters)]
 pub struct Player {
@@ -79,6 +79,12 @@ impl Player {
 
     dv
   }
+
+  pub fn debug_info(&self, s: &mut String) {
+    let Vec4 { x, y, z, w } = self.pos;
+    *s += &format!("X/Y/Z/W: {x} / {y} / {z} / {w}\n");
+    self.camera.debug_info(s);
+  }
 }
 
 #[derive(Debug)]
@@ -143,5 +149,11 @@ impl AxisCamera {
       let idx = (current_idx - 1 + d_imag).rem_euclid(3) + 1;
       self.imag_axis = Axis::try_from(idx as u8).unwrap();
     }
+  }
+
+  pub fn debug_info(&self, w: &mut String) {
+    *w += "Camera mode: AxisCamera\n";
+    *w += &format!("  Local rot YZ/XY : {} / {}\n", self.rot_yz, self.rot_xy);
+    *w += &format!("  Imag: {:?}\n", self.imag_axis);
   }
 }
