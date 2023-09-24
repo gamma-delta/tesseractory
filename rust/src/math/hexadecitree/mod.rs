@@ -45,21 +45,13 @@ impl Hexadecitree {
   }
 
   pub fn get(&self, pos: BlockPos) -> Option<Foxel> {
-    if !is_block_in_range(pos) {
-      None
-    } else {
-      let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
-      Some(self.foxel_arena[idx])
-    }
+    let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
+    Some(self.foxel_arena[idx])
   }
 
   pub fn get_mut(&mut self, pos: BlockPos) -> Option<&mut Foxel> {
-    if !is_block_in_range(pos) {
-      None
-    } else {
-      let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
-      Some(&mut self.foxel_arena[idx])
-    }
+    let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
+    Some(&mut self.foxel_arena[idx])
   }
 
   /// Return the previous foxel
@@ -86,16 +78,17 @@ impl Hexadecitree {
       + self.foxel_arena.capacity() * std::mem::size_of::<Foxel>()
   }
 
-  /// Returns an optional ptr to the lowest level.
-  ///
-  /// The arena[ptr] will always be a Leaf. Index into it with the returned idx.
+  /// Returns the idx of the foxel in the map
   fn find_recurse(
     &self,
     tree_ref: TreeRef,
     pos: IVec4,
     depth: usize,
   ) -> Option<usize> {
-    let (child_idx, pos2) = step_down_pos(pos, depth);
+    if depth == 0 && !is_block_in_range(BlockPos(pos)) {
+      return None;
+    }
+    let (child_idx, pos2) = step_down_pos(pos, depth == 0);
 
     let tree = self.arena.get(tree_ref.idx()).unwrap().friendly();
 
@@ -128,7 +121,10 @@ impl Hexadecitree {
     depth: usize,
     ever_failed: bool,
   ) -> Option<Foxel> {
-    let (child_idx, pos2) = step_down_pos(pos, depth);
+    if depth == 0 && !is_block_in_range(BlockPos(pos)) {
+      return None;
+    }
+    let (child_idx, pos2) = step_down_pos(pos, depth == 0);
 
     let old_len = self.arena.len();
     let tree_slot = self.arena.get_mut(tree_ref.idx()).unwrap();
@@ -202,21 +198,16 @@ fn is_block_in_range(pos: BlockPos) -> bool {
 ///
 /// Indexing uses all of the byte now. `WXYZWXYZ`, where the lower
 /// happens first.
-fn step_down_pos(pos: IVec4, depth: usize) -> (u8, IVec4) {
-  let (idx1, pos1) = step_down_one(pos, depth);
-  let (idx2, pos2) = step_down_one(pos1, depth);
+fn step_down_pos(pos: IVec4, zeroth_layer: bool) -> (u8, IVec4) {
+  let (idx1, pos1) = step_down_one(pos, zeroth_layer);
+  let (idx2, pos2) = step_down_one(pos1, false);
   (idx2 << 4 | idx1, pos2)
 }
 
 /// Return the index in the children, and the next "block pos"
 /// to examine.
-fn step_down_one(pos: IVec4, depth: usize) -> (u8, IVec4) {
-  debug_assert!(
-    depth < Hexadecitree::DEPTH,
-    "tried to iterate too many layers down"
-  );
-
-  if depth == 0 {
+fn step_down_one(pos: IVec4, zeroth_layer: bool) -> (u8, IVec4) {
+  if zeroth_layer {
     let positive = ((pos.x >= 0) as u8)
       | ((pos.y >= 0) as u8) << 1
       | ((pos.z >= 0) as u8) << 2

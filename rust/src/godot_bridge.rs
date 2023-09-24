@@ -1,12 +1,6 @@
-use godot::{
-  engine::{image, Image, ImageTexture, Node},
-  prelude::*,
-};
-use ultraviolet::IVec2;
+use godot::{engine::RenderingServer, prelude::*};
 
-const CANVAS_FORMAT: image::Format = image::Format::FORMAT_RGB8;
-
-use crate::{GameParams, WorldState};
+use crate::{math::hexadecitree::Hexadecitree, GameParams, WorldState};
 
 struct TesseractoryExtension;
 
@@ -20,13 +14,10 @@ struct TesseractoryWorldHandler {
   /// Only exists on _ready
   world_state: Option<WorldState>,
 
-  canvas: Gd<Image>,
-  canvas_tex: Gd<ImageTexture>,
-  canvas_scratch: Vec<[u8; 3]>,
-  canvas_scratch_pba: PackedByteArray,
-
   #[export]
   cfg: Option<Gd<Resource>>,
+  #[export]
+  screen: Option<Gd<Node>>,
 
   #[base]
   base: Base<Node>,
@@ -35,29 +26,33 @@ struct TesseractoryWorldHandler {
 #[godot_api]
 impl NodeVirtual for TesseractoryWorldHandler {
   fn init(base: Base<Node>) -> Self {
-    let canvas = Image::create(640, 480, false, CANVAS_FORMAT).unwrap();
-    let mut canvas_tex = ImageTexture::new();
-    canvas_tex.set_image(canvas.share());
-
     Self {
       base,
 
       world_state: None,
-      canvas,
-      canvas_tex,
-      canvas_scratch: vec![[0, 0, 0]; 640 * 480],
-      canvas_scratch_pba: PackedByteArray::new(),
 
+      screen: None,
       cfg: None,
     }
   }
 
   fn ready(&mut self) {
     let params = GameParams::load(self.cfg.as_ref().unwrap());
-    self.world_state = Some(WorldState::new(
-      IVec2::new(self.canvas.get_width(), self.canvas.get_height()),
-      params,
-    ));
+    self.world_state = Some(WorldState::new(params));
+
+    let mut rs = RenderingServer::singleton();
+    rs.global_shader_parameter_set(
+      "TREE_DEPTH".into(),
+      (Hexadecitree::DEPTH as u32).to_variant(),
+    );
+    rs.global_shader_parameter_set(
+      "TREE_MIN_COORD".into(),
+      (Hexadecitree::MIN_COORD as u32).to_variant(),
+    );
+    rs.global_shader_parameter_set(
+      "TREE_MAX_COORD".into(),
+      (Hexadecitree::MAX_COORD as u32).to_variant(),
+    );
   }
 
   fn physics_process(&mut self, delta: f64) {
@@ -67,47 +62,21 @@ impl NodeVirtual for TesseractoryWorldHandler {
       .unwrap()
       .physics_process(delta as f32);
   }
-
-  fn process(&mut self, _delta: f64) {
-    self
-      .world_state
-      .as_mut()
-      .unwrap()
-      .draw_world(&mut self.canvas_scratch);
-    let scratch_bytes = bytemuck::cast_slice(self.canvas_scratch.as_slice());
-    self.canvas_scratch_pba.resize(scratch_bytes.len());
-    self
-      .canvas_scratch_pba
-      .as_mut_slice()
-      .copy_from_slice(scratch_bytes);
-    self.canvas.set_data(
-      640,
-      480,
-      false,
-      CANVAS_FORMAT,
-      // COW, so cloning is ok
-      self.canvas_scratch_pba.clone(),
-    );
-    self.canvas_tex.update(self.canvas.share());
-  }
 }
 
-// This block is required for `#[var]` to work, for "technical reasons"
 #[godot_api]
 impl TesseractoryWorldHandler {
   #[func]
-  pub fn get_canvas_tex(&self) -> Gd<ImageTexture> {
-    self.canvas_tex.share()
+  pub fn global_shader_uniforms(&self) -> Dictionary {
+    let mut d = Dictionary::new();
+    d.set("TREE_DEPTH", Hexadecitree::DEPTH as u32);
+    d.set("TREE_MAX_COORD", Hexadecitree::MAX_COORD as u32);
+    d.set("TREE_MIN_COORD", Hexadecitree::MIN_COORD as u32);
+    d
   }
 
   #[func]
   pub fn debug_string(&self) -> GodotString {
     self.world_state.as_ref().unwrap().debug_info().into()
   }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct GodotEditorConfig {
-  pub fov: f32,
-  pub focal_dist: f32,
 }

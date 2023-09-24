@@ -1,28 +1,26 @@
-[gd_scene load_steps=5 format=3 uid="uid://bipuhyuwlp8gs"]
+[gd_scene load_steps=7 format=3 uid="uid://bipuhyuwlp8gs"]
 
 [ext_resource type="Script" path="res://default.gd" id="1_8wfm5"]
 [ext_resource type="Resource" uid="uid://ifq18qbmmpdm" path="res://config.tres" id="2_2kyj1"]
+[ext_resource type="Shader" path="res://shaders/show_world.gdshader" id="2_08noi"]
 [ext_resource type="PackedScene" uid="uid://da5cspbs8vsca" path="res://scenes/WorldUI.tscn" id="3_bgrba"]
 [ext_resource type="PackedScene" uid="uid://x0nqgmcwbo1m" path="res://scenes/PauseUI.tscn" id="4_e8iag"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_arbk3"]
+shader = ExtResource("2_08noi")
 
 [node name="Holder" type="Node3D"]
 process_mode = 3
 script = ExtResource("1_8wfm5")
 
-[node name="Screen" type="TextureRect" parent="."]
+[node name="Screen" type="ColorRect" parent="."]
 unique_name_in_owner = true
 texture_filter = 2
+material = SubResource("ShaderMaterial_arbk3")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Label" type="Label" parent="Screen"]
-layout_mode = 1
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_right = 107.0
 grow_vertical = 2
 
 [node name="StopWhenPaused" type="Node" parent="."]

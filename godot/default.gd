@@ -1,15 +1,13 @@
 extends Node3D
 
 @onready var tesser : TesseractoryWorldHandler = %TesseractoryWorldHandler
-@onready var screen : TextureRect = %Screen
+@onready var screen : Control = %Screen
 
 @onready var world_ui : WorldUI = %WorldUI
 @onready var pause_ui : Control = %PauseUI
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-  self.screen.texture = self.tesser.get_canvas_tex()
-  
   Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
   get_window().connect("focus_entered", self.on_focus)
   get_window().connect("focus_exited", self.on_unfocus)
