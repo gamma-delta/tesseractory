@@ -39,20 +39,6 @@ impl NodeVirtual for TesseractoryWorldHandler {
   fn ready(&mut self) {
     let params = GameParams::load(self.cfg.as_ref().unwrap());
     self.world_state = Some(WorldState::new(params));
-
-    let mut rs = RenderingServer::singleton();
-    rs.global_shader_parameter_set(
-      "TREE_DEPTH".into(),
-      (Hexadecitree::DEPTH as u32).to_variant(),
-    );
-    rs.global_shader_parameter_set(
-      "TREE_MIN_COORD".into(),
-      (Hexadecitree::MIN_COORD as u32).to_variant(),
-    );
-    rs.global_shader_parameter_set(
-      "TREE_MAX_COORD".into(),
-      (Hexadecitree::MAX_COORD as u32).to_variant(),
-    );
   }
 
   fn physics_process(&mut self, delta: f64) {
@@ -67,12 +53,49 @@ impl NodeVirtual for TesseractoryWorldHandler {
 #[godot_api]
 impl TesseractoryWorldHandler {
   #[func]
-  pub fn global_shader_uniforms(&self) -> Dictionary {
-    let mut d = Dictionary::new();
-    d.set("TREE_DEPTH", Hexadecitree::DEPTH as u32);
-    d.set("TREE_MAX_COORD", Hexadecitree::MAX_COORD as u32);
-    d.set("TREE_MIN_COORD", Hexadecitree::MIN_COORD as u32);
-    d
+  pub fn global_shader_uniforms(&self) -> PackedByteArray {
+    // https://stackoverflow.com/questions/60469505/how-can-i-create-a-tightly-packed-uniform-buffer-of-unsigned-bytes
+    // Apparently the gpu uses the same endianness as the cpu.
+    let mut p = PackedByteArray::new();
+
+    p.extend((Hexadecitree::DEPTH as u32).to_ne_bytes());
+    p.extend((Hexadecitree::MAX_COORD as u32).to_ne_bytes());
+    p.extend((Hexadecitree::MIN_COORD as u32).to_ne_bytes());
+    p
+  }
+
+  #[func]
+  pub fn hexadecitree_uniform(&self) -> PackedByteArray {
+    let mut p = PackedByteArray::new();
+
+    let branch_pad = 65536;
+    let foxel_pad = 8192; // note this is in u32s, not bytes
+
+    let tree = self.world_state.as_ref().unwrap().world.foxels();
+    let branches = tree.branches_to_gpu();
+    let foxels = tree.foxels_to_gpu();
+
+    if branches.len() > branch_pad {
+      panic!(
+        "tried to submit {} branches to the gpu but only have space for {}",
+        branches.len(),
+        branch_pad
+      );
+    }
+    p.extend(bytemuck::bytes_of(branches).into_iter().copied());
+    p.extend(std::iter::repeat(0).take((branch_pad - branches.len()) / 4));
+
+    if foxels.len() > foxel_pad {
+      panic!(
+        "tried to submit {} foxels to the gpu but only have space for {}",
+        foxels.len(),
+        foxel_pad
+      );
+    }
+    p.extend(bytemuck::bytes_of(foxels).into_iter().copied());
+    p.extend(std::iter::repeat(0).take((foxel_pad - foxels.len()) / 4));
+
+    p
   }
 
   #[func]

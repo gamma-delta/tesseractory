@@ -1,3 +1,4 @@
+use bytemuck::NoUninit;
 use getset::{CopyGetters, Getters};
 use godot::prelude::Color;
 use ultraviolet::Vec4;
@@ -20,27 +21,12 @@ impl World {
 
   pub fn setup_sample_scene(&mut self) {
     let f = &mut self.foxels;
-    f.set(
-      BlockPos::new(0, 0, 0, 0),
-      Foxel::ColorBlock(true, true, true),
-    );
+    f.set(BlockPos::new(0, 0, 0, 0), Foxel::White);
     for v in 1..10 {
-      f.set(
-        BlockPos::new(v, 0, 0, 0),
-        Foxel::ColorBlock(true, false, false),
-      );
-      f.set(
-        BlockPos::new(0, v, 0, 0),
-        Foxel::ColorBlock(false, true, false),
-      );
-      f.set(
-        BlockPos::new(0, 0, v, 0),
-        Foxel::ColorBlock(false, false, true),
-      );
-      f.set(
-        BlockPos::new(0, 0, 0, v),
-        Foxel::ColorBlock(true, false, true),
-      );
+      f.set(BlockPos::new(v, 0, 0, 0), Foxel::Red);
+      f.set(BlockPos::new(0, v, 0, 0), Foxel::Green);
+      f.set(BlockPos::new(0, 0, v, 0), Foxel::Blue);
+      f.set(BlockPos::new(0, 0, 0, v), Foxel::RB);
     }
   }
 
@@ -60,10 +46,18 @@ impl World {
 /// Foxes are imaginary creatures that exist only in dreams.
 /// For reasons they can't explain, everyone knows what a fox looks like,
 /// but no one can ever remember having seen one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, NoUninit)]
+#[repr(u8)]
 pub enum Foxel {
   Air,
-  ColorBlock(bool, bool, bool),
+  Red,
+  Green,
+  Blue,
+  RG,
+  GB,
+  RB,
+  Black,
+  White,
 }
 
 impl Foxel {
@@ -75,14 +69,21 @@ impl Foxel {
   }
 
   pub fn color(&self) -> Color {
-    match self {
+    let t = 1.0;
+    let f = 0.0;
+
+    let [r, g, b] = match self {
       Foxel::Air => panic!(),
-      &Foxel::ColorBlock(r, g, b) => {
-        let r = r as u8 * 255;
-        let g = g as u8 * 255;
-        let b = b as u8 * 255;
-        Color::from_rgba8(r, g, b, 255)
-      }
-    }
+      Foxel::Red => [t, f, f],
+      Foxel::Green => [f, t, f],
+      Foxel::Blue => [f, f, t],
+      Foxel::RG => [t, t, f],
+      Foxel::GB => [f, t, t],
+      Foxel::RB => [t, f, t],
+      Foxel::Black => [f, f, f],
+      Foxel::White => [t, t, t],
+    };
+
+    Color::from_rgba(r, g, b, 1.0)
   }
 }

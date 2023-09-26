@@ -1,5 +1,7 @@
 //! GPU-friendly representations of stuff
 
+use bytemuck::NoUninit;
+
 use super::Hexadecitree;
 
 const HIGH_BIT: u32 = 1 << 31;
@@ -31,7 +33,7 @@ impl TreeLevel {
 /// - `0b00000000...` : `TreeLevel::Empty`
 /// - `0b0XXXXXXX...` : `TreeLevel::Branch`
 /// - `0b1XXXXXXX...` : `TreeLevel::Leaf` (although the high bits are ignored)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, NoUninit)]
 #[repr(transparent)]
 pub(super) struct TreeLevelInner(u32);
 

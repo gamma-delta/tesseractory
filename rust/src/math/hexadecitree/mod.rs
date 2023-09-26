@@ -78,6 +78,14 @@ impl Hexadecitree {
       + self.foxel_arena.capacity() * std::mem::size_of::<Foxel>()
   }
 
+  pub fn branches_to_gpu(&self) -> &[u32] {
+    bytemuck::cast_slice(&self.arena)
+  }
+
+  pub fn foxels_to_gpu(&self) -> &[u32] {
+    bytemuck::cast_slice(&self.foxel_arena)
+  }
+
   /// Returns the idx of the foxel in the map
   fn find_recurse(
     &self,
