@@ -10,7 +10,7 @@ mod reprs;
 #[cfg(test)]
 mod tests;
 
-use ultraviolet::IVec4;
+use log::error;
 
 use crate::{math::BlockPos, Foxel};
 
@@ -19,179 +19,111 @@ use reprs::*;
 /// To facilitate passing to the gee poo, some memory shenanigans are in order.
 #[derive(Debug)]
 pub struct Hexadecitree {
-  /// 0th idx is always the root
-  arena: Vec<TreeLevelInner>,
-  foxel_arena: Vec<Foxel>,
+  grid: Box<[BrickPtrRepr; Self::TOTAL_BRICK_COUNT]>,
+  composite_bricks: Vec<Brick>,
 }
 
 impl Hexadecitree {
-  pub const DEPTH: usize = 6;
-  pub const MAX_COORD: i32 =
-    (Self::BRANCH_HYPERSIZE as i32).pow(Self::DEPTH as u32 - 1);
-  pub const MIN_COORD: i32 =
-    -(Self::BRANCH_HYPERSIZE as i32).pow(Self::DEPTH as u32 - 1) - 1;
+  pub const GRID_BREADTH: usize = 32;
+  pub const BRICK_BREADTH: usize = 8;
 
-  pub const BRANCH_HYPERSIZE: usize = 4;
-  pub const CHILDREN: usize = Self::BRANCH_HYPERSIZE.pow(4);
+  /// Doing this means I can store u16 brick pointers.
+  ///
+  /// This is the total number of non-solid bricks allowed.
+  pub const COMPOSITE_BRICK_COUNT: usize = 2usize.pow(15);
+
+  pub const FOXELS_PER_BRICK: usize = Self::BRICK_BREADTH.pow(4);
+  pub const TOTAL_BRICK_COUNT: usize = Self::GRID_BREADTH.pow(4);
+  pub const FOXELS_BREADTH: usize = Self::GRID_BREADTH * Self::BRICK_BREADTH;
+
+  pub const MIN_COORD: i32 = -(Self::FOXELS_BREADTH as i32) / 2;
+  pub const MAX_COORD: i32 = (Self::FOXELS_BREADTH as i32) / 2 - 1;
 
   pub fn new() -> Self {
-    let root = TreeLevel::Branch(TreeRef::from_idx(1)).enc();
-    let mut arena = vec![root];
-    for _ in 0..Self::CHILDREN {
-      arena.push(TreeLevel::Empty.enc());
+    let grid_vec = vec![BrickPtrRepr::solid_air(); Self::TOTAL_BRICK_COUNT];
+    let grid = grid_vec.into_boxed_slice().try_into().unwrap();
+    Self {
+      grid,
+      composite_bricks: Vec::new(),
     }
-    let foxel_arena = Vec::new();
-    Self { arena, foxel_arena }
   }
 
   pub fn get(&self, pos: BlockPos) -> Option<Foxel> {
-    let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
-    Some(self.foxel_arena[idx])
-  }
-
-  pub fn get_mut(&mut self, pos: BlockPos) -> Option<&mut Foxel> {
-    let idx = self.find_recurse(TreeRef::root(), pos.0, 0)?;
-    Some(&mut self.foxel_arena[idx])
+    let (grid_idx, brick_idx) = decompose_pos(pos)?;
+    match self.grid[grid_idx].decode() {
+      BrickPtr::Solid(f) => Some(f),
+      BrickPtr::Pointer(ptr) => {
+        let Some(bricc) = self.composite_bricks.get(ptr) else {
+          error!(
+            "when getting, a BrickPtr pointed to {} but only have {} bricks",
+            ptr,
+            self.composite_bricks.len()
+          );
+          return None;
+        };
+        Some(bricc.0[brick_idx])
+      }
+    }
   }
 
   /// Return the previous foxel
-  pub fn set(&mut self, pos: BlockPos, foxel: Foxel) -> Option<Foxel> {
-    if !is_block_in_range(pos) {
-      None
-    } else {
-      self.set_foxel_recurse(TreeRef::root(), pos.0, foxel, 0, false)
-    }
-  }
-
-  /// `(len, cap)`
-  pub fn branch_sizes(&self) -> (usize, usize) {
-    (self.arena.len(), self.arena.capacity())
-  }
-
-  /// `(len, cap)`
-  pub fn foxel_sizes(&self) -> (usize, usize) {
-    (self.foxel_arena.len(), self.foxel_arena.capacity())
-  }
-
-  pub fn memory(&self) -> usize {
-    self.arena.capacity() * std::mem::size_of::<TreeLevelInner>()
-      + self.foxel_arena.capacity() * std::mem::size_of::<Foxel>()
-  }
-
-  pub fn branches_to_gpu(&self) -> &[u32] {
-    bytemuck::cast_slice(&self.arena)
-  }
-
-  pub fn foxels_to_gpu(&self) -> &[u32] {
-    bytemuck::cast_slice(&self.foxel_arena)
-  }
-
-  /// Returns the idx of the foxel in the map
-  fn find_recurse(
-    &self,
-    tree_ref: TreeRef,
-    pos: IVec4,
-    depth: usize,
-  ) -> Option<usize> {
-    if depth == 0 && !is_block_in_range(BlockPos(pos)) {
-      return None;
-    }
-    let (child_idx, pos2) = step_down_pos(pos, depth == 0);
-
-    let tree = self.arena.get(tree_ref.idx()).unwrap().friendly();
-
-    if depth == Hexadecitree::DEPTH - 1 {
-      // yes! better find a leaf node here
-      let TreeLevel::Leaf(foxels) = tree else {
-        panic!("tried to get foxels out of a branch node")
-      };
-      Some(foxels.idx(child_idx))
-    } else {
-      // Indexing down
-      let branch_idx = match tree {
-        TreeLevel::Branch(b) => b,
-        TreeLevel::Empty => return None,
-        TreeLevel::Leaf(_) => {
-          panic!("tried to get branches out of a leaf node")
-        }
-      };
-      let next_level_ptr = TreeRef::from_idx(branch_idx.child_idx(child_idx));
-      self.find_recurse(next_level_ptr, pos2, depth + 1)
-    }
-  }
-
-  /// Call with `None` foxel to just create all the needed branches
-  fn set_foxel_recurse(
+  pub fn set(
     &mut self,
-    tree_ref: TreeRef,
-    pos: IVec4,
+    pos: BlockPos,
     foxel: Foxel,
-    depth: usize,
-    ever_failed: bool,
-  ) -> Option<Foxel> {
-    if depth == 0 && !is_block_in_range(BlockPos(pos)) {
-      return None;
-    }
-    let (child_idx, pos2) = step_down_pos(pos, depth == 0);
+  ) -> Result<Foxel, SetFoxelError> {
+    let (grid_idx, brick_idx) =
+      decompose_pos(pos).ok_or(SetFoxelError::OutOfBounds)?;
 
-    let old_len = self.arena.len();
-    let tree_slot = self.arena.get_mut(tree_ref.idx()).unwrap();
-    let tree = tree_slot.friendly();
-
-    if depth == Hexadecitree::DEPTH - 1 {
-      // Bottom of tree
-      let foxels = match tree {
-        TreeLevel::Empty => panic!("tried to access an empty branch"),
-        TreeLevel::Leaf(f) => f,
-        TreeLevel::Branch(_) => {
-          panic!("tried to get foxels out of a branch")
-        }
-      };
-
-      let extant =
-        std::mem::replace(&mut self.foxel_arena[foxels.idx(child_idx)], foxel);
-      if ever_failed {
-        // it'll be air
-        None
-      } else {
-        Some(extant)
-      }
-    } else {
-      match tree {
-        TreeLevel::Leaf(_) => panic!("tried to get branches out of a leaf"),
-        TreeLevel::Empty => {
-          // Create a new branch
-          let new_level = if depth == Hexadecitree::DEPTH - 2 {
-            let len = self.foxel_arena.len();
-            self
-              .foxel_arena
-              .extend_from_slice(&[Foxel::Air; Hexadecitree::CHILDREN]);
-            TreeLevel::Leaf(FoxelSpanRef::from_idx(len as _))
-          } else {
-            // This has no children, yet
-            TreeLevel::Empty
-          };
-          // yes! we can now use the level ptr
-          let span_ptr = TreeRef::from_idx(old_len);
-          *tree_slot = TreeLevel::Branch(span_ptr).enc();
-          // Create the space for the 16 children
-          self.arena.push(new_level.enc());
-          self.arena.extend(
-            std::iter::from_fn(|| Some(TreeLevel::Empty.enc()))
-              .take(Hexadecitree::CHILDREN),
+    let slot = &mut self.grid[grid_idx];
+    match slot.decode() {
+      BrickPtr::Pointer(ptr) => {
+        let Some(bricc) = self.composite_bricks.get_mut(ptr) else {
+          error!(
+            "when setting, a BrickPtr pointed to {} but only have {} bricks",
+            ptr,
+            self.composite_bricks.len()
           );
-          let new_level_ptr = TreeRef::from_idx(span_ptr.child_idx(child_idx));
-
-          self.set_foxel_recurse(new_level_ptr, pos2, foxel, depth + 1, true)
+          // OOB I guess?????
+          return Err(SetFoxelError::OutOfBounds);
+        };
+        let extant = std::mem::replace(&mut bricc.0[brick_idx], foxel);
+        Ok(extant)
+      }
+      BrickPtr::Solid(fill) => {
+        // no change!
+        if fill == foxel {
+          return Ok(foxel);
         }
-        TreeLevel::Branch(subtree_ptr) => {
-          let next_idx = TreeRef::from_idx(subtree_ptr.child_idx(child_idx));
 
-          self.set_foxel_recurse(next_idx, pos2, foxel, depth + 1, ever_failed)
+        let idx = self.composite_bricks.len();
+        if idx >= Self::COMPOSITE_BRICK_COUNT {
+          return Err(SetFoxelError::OutOfMemory);
         }
+
+        // Expand the brick
+        let mut brick_vec = vec![fill; Hexadecitree::FOXELS_PER_BRICK];
+        brick_vec[brick_idx] = foxel;
+        self
+          .composite_bricks
+          .push(Brick(brick_vec.try_into().unwrap()));
+
+        let ptr_enc = BrickPtr::Pointer(idx);
+        *slot = ptr_enc.encode();
+        Ok(fill)
       }
     }
   }
+
+  pub fn composite_brick_count(&self) -> usize {
+    self.composite_bricks.len()
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SetFoxelError {
+  OutOfBounds,
+  OutOfMemory,
 }
 
 fn is_block_in_range(pos: BlockPos) -> bool {
@@ -202,30 +134,31 @@ fn is_block_in_range(pos: BlockPos) -> bool {
     .all(|n| (Hexadecitree::MIN_COORD..=Hexadecitree::MAX_COORD).contains(&n))
 }
 
-/// Step down twice.
-///
-/// Indexing uses all of the byte now. `WXYZWXYZ`, where the lower
-/// happens first.
-fn step_down_pos(pos: IVec4, zeroth_layer: bool) -> (u8, IVec4) {
-  let (idx1, pos1) = step_down_one(pos, zeroth_layer);
-  let (idx2, pos2) = step_down_one(pos1, false);
-  (idx2 << 4 | idx1, pos2)
-}
-
-/// Return the index in the children, and the next "block pos"
-/// to examine.
-fn step_down_one(pos: IVec4, zeroth_layer: bool) -> (u8, IVec4) {
-  if zeroth_layer {
-    let positive = ((pos.x >= 0) as u8)
-      | ((pos.y >= 0) as u8) << 1
-      | ((pos.z >= 0) as u8) << 2
-      | ((pos.w >= 0) as u8) << 3;
-    (positive, pos.abs())
-  } else {
-    let one_bits = ((pos.x & 1 != 0) as u8)
-      | ((pos.y & 1 != 0) as u8) << 1
-      | ((pos.z & 1 != 0) as u8) << 2
-      | ((pos.w & 1 != 0) as u8) << 3;
-    (one_bits, pos / 2) // shl 1
+/// Return the index of the brick it's in, then (if the brick isn't solid)
+/// the index of the position in the brick
+fn decompose_pos(pos: BlockPos) -> Option<(usize, usize)> {
+  if !is_block_in_range(pos) {
+    return None;
   }
+
+  let mut brick_idx = 0;
+  let mut foxel_idx = 0;
+  for v in pos.0.as_array() {
+    let foxel_pos = v.rem_euclid(Hexadecitree::BRICK_BREADTH as i32) as usize;
+
+    let raw_brick_pos = if v >= 0 {
+      v / Hexadecitree::GRID_BREADTH as i32
+    } else {
+      v / Hexadecitree::GRID_BREADTH as i32 - 1
+    };
+    // Shift so 0,0 is in the center of the bricks
+    let brick_pos = raw_brick_pos + Hexadecitree::GRID_BREADTH as i32 / 2;
+
+    foxel_idx *= Hexadecitree::BRICK_BREADTH;
+    foxel_idx |= foxel_pos;
+    brick_idx *= Hexadecitree::GRID_BREADTH;
+    brick_idx |= brick_pos as usize;
+  }
+
+  Some((brick_idx, foxel_idx))
 }

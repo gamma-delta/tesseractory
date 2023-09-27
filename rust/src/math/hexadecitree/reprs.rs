@@ -2,100 +2,60 @@
 
 use bytemuck::NoUninit;
 
+use crate::world::Foxel;
+
 use super::Hexadecitree;
 
-const HIGH_BIT: u32 = 1 << 31;
+const HIGH_BIT16: u16 = 1 << 15;
 
 #[derive(Debug)]
-pub(super) enum TreeLevel {
-  Empty,
-  /// Indices into the branch arena.
-  /// Index this by going to the tree ref, then adding the child pointer.
-  Branch(TreeRef),
-  Leaf(FoxelSpanRef),
+pub(super) enum BrickPtr {
+  Solid(Foxel),
+  Pointer(usize),
 }
 
-impl TreeLevel {
-  pub fn enc(&self) -> TreeLevelInner {
-    TreeLevelInner(match self {
-      TreeLevel::Empty => 0,
-      TreeLevel::Branch(TreeRef(x)) => {
-        debug_assert_eq!(x & HIGH_BIT, 0);
-        x & (!HIGH_BIT)
+impl BrickPtr {
+  pub fn encode(&self) -> BrickPtrRepr {
+    BrickPtrRepr(match self {
+      &BrickPtr::Solid(f) => f as u16,
+      &BrickPtr::Pointer(ptr) => {
+        debug_assert!(ptr < Hexadecitree::COMPOSITE_BRICK_COUNT);
+        HIGH_BIT16 | (ptr as u16)
       }
-      &TreeLevel::Leaf(FoxelSpanRef(x)) => HIGH_BIT | x as u32,
     })
   }
 }
 
-/// Compressed version of TreeLevel.
+/// The high bit indicates the type of this thing.
 ///
-/// - `0b00000000...` : `TreeLevel::Empty`
-/// - `0b0XXXXXXX...` : `TreeLevel::Branch`
-/// - `0b1XXXXXXX...` : `TreeLevel::Leaf` (although the high bits are ignored)
+/// If it's set, then the remainder is a 15-bit brick index.
+/// If not, then the low 8 bits are a foxel.
+///
+/// This means all 0 is entirely air!
 #[derive(Debug, Clone, Copy, NoUninit)]
 #[repr(transparent)]
-pub(super) struct TreeLevelInner(u32);
+pub(super) struct BrickPtrRepr(u16);
 
-impl TreeLevelInner {
-  pub fn friendly(self) -> TreeLevel {
+impl BrickPtrRepr {
+  pub fn solid_air() -> Self {
+    Self(0)
+  }
+
+  pub fn decode(self) -> BrickPtr {
     let x = self.0;
 
-    // The root node will never be stored in the tree, so we can use
-    // 0 for empty
-    if x == 0 {
-      TreeLevel::Empty
-    } else if (x & HIGH_BIT) == 0 {
-      let unmasked = x & !HIGH_BIT;
-      TreeLevel::Branch(TreeRef(unmasked))
+    if x & HIGH_BIT16 != 0 {
+      let ptr = x & (!HIGH_BIT16);
+      BrickPtr::Pointer(ptr as usize)
     } else {
-      // the high bit MUST be set.
-      let squished = (x & 0xFFFF) as u16;
-      TreeLevel::Leaf(FoxelSpanRef(squished))
+      let foxel = u8::try_from(x)
+        .ok()
+        .and_then(|i| Foxel::try_from(i).ok())
+        .unwrap_or(Foxel::Air);
+      BrickPtr::Solid(foxel)
     }
   }
 }
 
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-pub(super) struct TreeRef(u32);
-
-impl TreeRef {
-  pub fn root() -> Self {
-    Self(0)
-  }
-
-  pub fn child_idx(self, child_idx: u8) -> usize {
-    self.0 as usize + child_idx as usize
-  }
-
-  pub fn from_idx(x: usize) -> Self {
-    Self(x as u32)
-  }
-
-  pub fn idx(self) -> usize {
-    self.0 as _
-  }
-}
-
-impl std::fmt::Debug for TreeRef {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.0)
-  }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(super) struct FoxelSpanRef(u16);
-
-impl FoxelSpanRef {
-  pub const SPAN: usize = Hexadecitree::CHILDREN;
-
-  pub fn from_idx(x: usize) -> Self {
-    debug_assert_eq!(x % Self::SPAN, 0);
-    Self((x / Self::SPAN) as _)
-  }
-
-  pub fn idx(self, child_idx: u8) -> usize {
-    self.0 as usize * Self::SPAN + child_idx as usize
-  }
-}
+#[derive(Debug, Clone)]
+pub struct Brick(pub [Foxel; Hexadecitree::FOXELS_PER_BRICK]);

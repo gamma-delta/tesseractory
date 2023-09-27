@@ -6,6 +6,7 @@ pub mod world;
 
 use extensions::GodotObjectExt;
 use godot::prelude::{Color, Gd, Resource};
+use math::hexadecitree::Hexadecitree;
 use player::Player;
 use ultraviolet::Vec4;
 use world::{Foxel, World};
@@ -47,13 +48,10 @@ impl WorldState {
     self.player.debug_info(&mut w);
 
     w += &format!(
-      "Tree size : {} MB\n",
-      self.world.foxels().memory() as f32 / 1_000_000.0
+      "Composite bricks: {} / {}\n",
+      self.world.foxels().composite_brick_count(),
+      Hexadecitree::COMPOSITE_BRICK_COUNT,
     );
-    let (blen, bcap) = self.world.foxels().branch_sizes();
-    w += &format!("Branch len/cap: {blen}/{bcap}\n");
-    let (flen, fcap) = self.world.foxels().foxel_sizes();
-    w += &format!("Foxel len/cap: {flen}/{fcap}\n");
 
     w
   }

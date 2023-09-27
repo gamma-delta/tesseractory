@@ -1,9 +1,13 @@
 use bytemuck::NoUninit;
 use getset::{CopyGetters, Getters};
 use godot::prelude::Color;
+use num_enum::TryFromPrimitive;
 use ultraviolet::Vec4;
 
-use crate::math::{hexadecitree::Hexadecitree, BlockPos};
+use crate::math::{
+  hexadecitree::{Hexadecitree, SetFoxelError},
+  BlockPos,
+};
 
 #[derive(CopyGetters, Getters)]
 pub struct World {
@@ -21,12 +25,12 @@ impl World {
 
   pub fn setup_sample_scene(&mut self) {
     let f = &mut self.foxels;
-    f.set(BlockPos::new(0, 0, 0, 0), Foxel::White);
+    f.set(BlockPos::new(0, 0, 0, 0), Foxel::White).unwrap();
     for v in 1..10 {
-      f.set(BlockPos::new(v, 0, 0, 0), Foxel::Red);
-      f.set(BlockPos::new(0, v, 0, 0), Foxel::Green);
-      f.set(BlockPos::new(0, 0, v, 0), Foxel::Blue);
-      f.set(BlockPos::new(0, 0, 0, v), Foxel::RB);
+      f.set(BlockPos::new(v, 0, 0, 0), Foxel::Red).unwrap();
+      f.set(BlockPos::new(0, v, 0, 0), Foxel::Green).unwrap();
+      f.set(BlockPos::new(0, 0, v, 0), Foxel::Blue).unwrap();
+      f.set(BlockPos::new(0, 0, 0, v), Foxel::RB).unwrap();
     }
   }
 
@@ -34,11 +38,11 @@ impl World {
     self.foxels.get(pos)
   }
 
-  pub fn get_foxel_mut(&mut self, pos: BlockPos) -> Option<&mut Foxel> {
-    self.foxels.get_mut(pos)
-  }
-
-  pub fn set_foxel(&mut self, pos: BlockPos, foxel: Foxel) -> Option<Foxel> {
+  pub fn set_foxel(
+    &mut self,
+    pos: BlockPos,
+    foxel: Foxel,
+  ) -> Result<Foxel, SetFoxelError> {
     self.foxels.set(pos, foxel)
   }
 }
@@ -46,7 +50,7 @@ impl World {
 /// Foxes are imaginary creatures that exist only in dreams.
 /// For reasons they can't explain, everyone knows what a fox looks like,
 /// but no one can ever remember having seen one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, NoUninit)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, NoUninit, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Foxel {
   Air,
