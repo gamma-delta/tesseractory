@@ -48,7 +48,8 @@ impl Hexadecitree {
   pub const MAX_UPLOAD_BYTE_COUNT: usize =
     Self::BRICKS_BYTES + Self::MAX_COMPOSITE_BRICKS_BYTES;
 
-  pub const TRANSFER_IMAGE_SIZE: usize = 5000;
+  /// Each pixel is 4 bytes due to Aughgh
+  pub const TRANSFER_IMAGE_SIZE: usize = 1024;
   pub const TRANSFER_IMAGE_SIZE_SQ: usize = Self::TRANSFER_IMAGE_SIZE.pow(2);
 
   pub fn new() -> Self {
@@ -84,7 +85,7 @@ impl Hexadecitree {
     pos: BlockPos,
     foxel: Foxel,
   ) -> Result<Foxel, SetFoxelError> {
-    let (grid_idx, brick_idx) =
+    let (grid_idx, foxel_idx) =
       decompose_pos(pos).ok_or(SetFoxelError::OutOfBounds)?;
 
     let slot = &mut self.grid[grid_idx];
@@ -99,11 +100,14 @@ impl Hexadecitree {
           // OOB I guess?????
           return Err(SetFoxelError::OutOfBounds);
         };
-        error!(
+        trace!(
           "setting brick #{} composite #{} idx #{} to {:?}",
-          grid_idx, ptr, brick_idx, foxel
+          grid_idx,
+          ptr,
+          foxel_idx,
+          foxel
         );
-        let extant = std::mem::replace(&mut bricc.0[brick_idx], foxel.encode());
+        let extant = std::mem::replace(&mut bricc.0[foxel_idx], foxel.encode());
         Ok(extant.decode())
       }
       BrickPtr::Solid(fill) => {
@@ -119,7 +123,7 @@ impl Hexadecitree {
 
         // Expand the brick
         let mut brick_vec = vec![fill.encode(); Hexadecitree::FOXELS_PER_BRICK];
-        brick_vec[brick_idx] = foxel.encode();
+        brick_vec[foxel_idx] = foxel.encode();
         self
           .composite_bricks
           .push(Brick(brick_vec.try_into().unwrap()));
@@ -127,10 +131,14 @@ impl Hexadecitree {
         let ptr_enc = BrickPtr::Pointer(new_composite_idx);
         *slot = ptr_enc.encode();
 
-        error!(
-          "expanding brick #{} of {:?},
+        trace!(
+          "expanding brick #{} of {:?},\
           now at composite #{} with inclusion {:?} @ #{}",
-          grid_idx, fill, new_composite_idx, foxel, brick_idx
+          grid_idx,
+          fill,
+          new_composite_idx,
+          foxel,
+          foxel_idx
         );
 
         Ok(fill)
@@ -140,6 +148,10 @@ impl Hexadecitree {
 
   pub fn composite_brick_count(&self) -> usize {
     self.composite_bricks.len()
+  }
+
+  pub fn auugh(&self) {
+    println!("{:?}", &self.composite_bricks[0]);
   }
 }
 
@@ -180,10 +192,10 @@ fn decompose_pos(pos: BlockPos) -> Option<(usize, usize)> {
       raw_brick_pos + Hexadecitree::BRICKS_ACROSS_WORLD as i32 / 2;
     debug_assert!(brick_pos >= 0);
 
-    foxel_idx *= Hexadecitree::FOXELS_ACROSS_BRICK;
-    foxel_idx |= foxel_pos;
     grid_idx *= Hexadecitree::BRICKS_ACROSS_WORLD;
     grid_idx |= brick_pos as usize;
+    foxel_idx *= Hexadecitree::FOXELS_ACROSS_BRICK;
+    foxel_idx |= foxel_pos;
   }
 
   Some((grid_idx, foxel_idx))

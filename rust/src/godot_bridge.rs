@@ -5,7 +5,8 @@ use godot::{
 
 use crate::{math::hexadecitree::Hexadecitree, GameParams, WorldState};
 
-const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_R8;
+/// https://github.com/godotengine/godot/issues/57841
+const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_RF;
 
 struct TesseractoryExtension;
 
@@ -48,6 +49,9 @@ impl NodeVirtual for TesseractoryWorldHandler {
   }
 
   fn ready(&mut self) {
+    let params = GameParams::load(self.cfg.as_ref().unwrap());
+    let world_state = WorldState::new(params);
+
     let mut tree_image = Image::create(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
@@ -58,9 +62,6 @@ impl NodeVirtual for TesseractoryWorldHandler {
     let mut scratch = vec![0; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ];
     let mut tree_tex =
       ImageTexture::create_from_image(tree_image.share()).unwrap();
-
-    let params = GameParams::load(self.cfg.as_ref().unwrap());
-    let world_state = WorldState::new(params);
 
     world_state.world.foxels().upload(&mut scratch);
     tree_image.set_data(
@@ -88,6 +89,10 @@ impl NodeVirtual for TesseractoryWorldHandler {
       (
         "TREE_FOXELS_ACROSS_BRICK",
         (Hexadecitree::FOXELS_ACROSS_BRICK as u32).to_variant(),
+      ),
+      (
+        "TREE_FOXELS_PER_BRICK",
+        (Hexadecitree::FOXELS_PER_BRICK as u32).to_variant(),
       ),
       (
         "TREE_BRICKS_ACROSS_WORLD",

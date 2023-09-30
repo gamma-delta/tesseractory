@@ -74,6 +74,7 @@ impl Hexadecitree {
       panic!("tried to ship {} bytes to the gpu but that was more than the allowed {}", bytes.len(), Hexadecitree::MAX_UPLOAD_BYTE_COUNT);
     }
     // resize it to the size of the image, mandatory
-    bytes.resize(Hexadecitree::TRANSFER_IMAGE_SIZE_SQ, 0);
+    // because the image is floats, ... ughh
+    bytes.resize(Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4, 0);
   }
 }

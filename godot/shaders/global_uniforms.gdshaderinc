@@ -4,6 +4,7 @@
 global uniform uint TREE_COMPOSITE_BRICK_COUNT;
 
 global uniform uint TREE_FOXELS_ACROSS_BRICK;
+global uniform uint TREE_FOXELS_PER_BRICK;
 global uniform uint TREE_BRICKS_ACROSS_WORLD;
 global uniform uint TREE_BRICKS_BYTES;
 

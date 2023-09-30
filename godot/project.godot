@@ -124,3 +124,7 @@ TREE_BRICKS_BYTES={
 "type": "uint",
 "value": 0
 }
+TREE_FOXELS_PER_BRICK={
+"type": "uint",
+"value": 0
+}
