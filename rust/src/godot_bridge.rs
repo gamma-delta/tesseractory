@@ -16,19 +16,22 @@ unsafe impl ExtensionLibrary for TesseractoryExtension {}
 #[class(base = Node)]
 #[allow(dead_code)]
 struct TesseractoryWorldHandler {
-  /// Only exists on _ready
-  world_state: Option<WorldState>,
-
   #[export]
   cfg: Option<Gd<Resource>>,
 
-  tree_image: Gd<Image>,
-  tree_image_scratch: Vec<u8>,
-  #[var]
-  tree_tex: Gd<ImageTexture>,
+  on_ready: Option<OnReadyStuff>,
 
   #[base]
   base: Base<Node>,
+}
+
+struct OnReadyStuff {
+  /// Only exists on _ready
+  world_state: WorldState,
+
+  tree_image: Gd<Image>,
+  tree_image_scratch: Vec<u8>,
+  tree_tex: Gd<ImageTexture>,
 }
 
 #[godot_api]
@@ -37,43 +40,44 @@ impl NodeVirtual for TesseractoryWorldHandler {
     // apparently is initialized elsewhere
     let _ = env_logger::try_init();
 
-    let image = Image::create(
+    Self {
+      base,
+      cfg: None,
+      on_ready: None,
+    }
+  }
+
+  fn ready(&mut self) {
+    let mut tree_image = Image::create(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       false,
       TREE_IMG_FORMAT,
     )
     .unwrap();
-    let scratch = vec![0; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ];
-    let tex = ImageTexture::create_from_image(image.share()).unwrap();
+    let mut scratch = vec![0; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ];
+    let mut tree_tex =
+      ImageTexture::create_from_image(tree_image.share()).unwrap();
 
-    Self {
-      base,
-
-      world_state: None,
-
-      tree_image: image,
-      tree_image_scratch: scratch,
-      tree_tex: tex,
-
-      cfg: None,
-    }
-  }
-
-  fn ready(&mut self) {
     let params = GameParams::load(self.cfg.as_ref().unwrap());
-    self.world_state = Some(WorldState::new(params));
+    let world_state = WorldState::new(params);
 
-    let world = self.world_state.as_ref().unwrap();
-    world.world.foxels().upload(&mut self.tree_image_scratch);
-    self.tree_image.set_data(
+    world_state.world.foxels().upload(&mut scratch);
+    tree_image.set_data(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       false,
       TREE_IMG_FORMAT,
-      PackedByteArray::from(self.tree_image_scratch.as_slice()),
+      PackedByteArray::from(scratch.as_slice()),
     );
-    self.tree_tex.update(self.tree_image.share());
+    tree_tex.update(tree_image.share());
+
+    self.on_ready = Some(OnReadyStuff {
+      world_state,
+      tree_image,
+      tree_image_scratch: scratch,
+      tree_tex,
+    });
 
     let mut rs = RenderingServer::singleton();
     for (k, v) in [
@@ -103,11 +107,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
   fn process(&mut self, delta: f64) {}
 
   fn physics_process(&mut self, delta: f64) {
-    self
-      .world_state
-      .as_mut()
-      .unwrap()
-      .physics_process(delta as f32);
+    self.stuff_mut().world_state.physics_process(delta as f32);
   }
 }
 
@@ -115,15 +115,31 @@ impl NodeVirtual for TesseractoryWorldHandler {
 impl TesseractoryWorldHandler {
   #[func]
   pub fn debug_string(&self) -> GodotString {
-    self.world_state.as_ref().unwrap().debug_info().into()
+    let stuff = self.stuff();
+    stuff.world_state.debug_info().into()
   }
 
   #[func]
   pub fn apply_per_tick_uniforms(&self, mut shader: Gd<ShaderMaterial>) {
-    let w = self.world_state.as_ref().unwrap();
+    let stuff = self.stuff();
 
-    let pp = w.player.pos();
+    let pp = stuff.world_state.player.pos();
     let g_playerpos = Vector4::new(pp.x, pp.y, pp.z, pp.w);
     shader.set_shader_parameter("playerPos".into(), g_playerpos.to_variant());
+  }
+
+  #[func]
+  pub fn tree_tex(&self) -> Gd<ImageTexture> {
+    self.stuff().tree_tex.share()
+  }
+}
+
+impl TesseractoryWorldHandler {
+  fn stuff(&self) -> &OnReadyStuff {
+    self.on_ready.as_ref().unwrap()
+  }
+
+  fn stuff_mut(&mut self) -> &mut OnReadyStuff {
+    self.on_ready.as_mut().unwrap()
   }
 }

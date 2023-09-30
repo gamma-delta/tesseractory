@@ -12,7 +12,7 @@ func _ready():
   get_window().connect("focus_entered", self.on_focus)
   get_window().connect("focus_exited", self.on_unfocus)
   
-  (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex)
+  (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex())
 
 func _process(_delta: float):
   world_ui.set_debug_info(tesser.debug_string())
