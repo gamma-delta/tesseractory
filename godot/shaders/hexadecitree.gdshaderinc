@@ -76,10 +76,15 @@ bool _H_decomposePos(
   return true;
 }
 
-bool H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
+#define H_GET_OOB 0u
+#define H_GET_AIR_BRICK 1u
+#define H_GET_FOXEL 2u
+
+// Returns H_GET*
+uint H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
   uint gridIdx, foxelIdx;
   if (!_H_decomposePos(blockPos, gridIdx, foxelIdx)) {
-    return false;
+    return H_GET_OOB;
   }
 
   uint brickPtr = _H_getBrickPtrRepr(tree, gridIdx);
@@ -89,11 +94,54 @@ bool H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
     uint compositeIdx = brickPtr & ~highBit;
     uint foxelOffset = compositeIdx * TREE_FOXELS_PER_BRICK + foxelIdx;
     foxel = _H_index(tree, TREE_BRICKS_BYTES + foxelOffset);
-    // foxel = (compositeIdx == 0u ? 2u : 1u);
+    return H_GET_FOXEL;
   } else {
     // Solid brick
     foxel = brickPtr & 0xffu;
-    // foxel = 5u;
+    // return (foxel == 0u ? H_GET_AIR_BRICK : H_GET_FOXEL);
+    return H_GET_FOXEL;
   }
-  return foxel != 0u;
+}
+
+struct H_Hit {
+  uint foxel;
+  vec4 normal;
+};
+
+bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
+  ivec4 signums = ivec4(sign(dir));
+  // only mutable thing!!
+  ivec4 cursor = ivec4(floor(start)) + ivec4(lessThan(dir, vec4(0)));
+
+  ivec4 cursorOffset = -1 * ivec4(lessThan(dir, vec4(0)));
+
+  vec4 dirRecip = 1.0 / dir;
+  vec4 slopeSomething = -start * dirRecip;
+  
+  for(uint i = 0u; i < 32u; i++) {
+    uint foxel;
+    uint res = H_get(tree, cursor + cursorOffset, foxel);
+    if (res == H_GET_OOB) {
+      return false;
+    } else if (res == H_GET_FOXEL && foxel != 0u) {
+      hit.foxel = foxel;
+      hit.normal = -vec4(signums);
+      return true;
+    }
+  
+    vec4 exitPoses = vec4(cursor + signums);
+    vec4 exitTimes = fma(exitPoses, dirRecip, slopeSomething);
+    // auugh
+    float exitTime = min(exitTimes.x, min(exitTimes.y, min(exitTimes.z, exitTimes.w)));
+    // epsilon equal
+    ivec4 minTimeMap = ivec4(lessThan(
+      abs(exitTimes - exitTime),
+      vec4(0.001)
+    ));
+    ivec4 cursorInc = minTimeMap * signums;
+
+    cursor += cursorInc;
+  }
+
+  return false;
 }

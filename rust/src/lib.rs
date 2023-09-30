@@ -24,8 +24,8 @@ impl WorldState {
     let mut world = World::new(sun_dir);
     world.setup_sample_scene();
 
-    // let player = Player::new(Vec4::new(0.0, -3.0, 0.001, 0.5));
-    let player = Player::new(Vec4::new(0.0, 0.0, 0.0, 0.0));
+    let player = Player::new(Vec4::new(0.0, -3.0, 0.001, 0.5));
+    // let player = Player::new(Vec4::new(0.0, 0.0, 0.0, 0.0));
 
     Self {
       world,

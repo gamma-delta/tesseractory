@@ -131,6 +131,11 @@ impl TesseractoryWorldHandler {
     let pp = stuff.world_state.player.pos();
     let g_playerpos = Vector4::new(pp.x, pp.y, pp.z, pp.w);
     shader.set_shader_parameter("playerPos".into(), g_playerpos.to_variant());
+
+    let cfg = &stuff.world_state.params;
+    shader
+      .set_shader_parameter("focalDist".into(), cfg.focal_dist.to_variant());
+    shader.set_shader_parameter("fov".into(), cfg.fov.to_variant());
   }
 
   #[func]
