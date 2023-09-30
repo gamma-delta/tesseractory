@@ -2,7 +2,7 @@
 
 use bytemuck::NoUninit;
 
-use crate::world::Foxel;
+use crate::world::foxel::{Foxel, FoxelRepr};
 
 use super::Hexadecitree;
 
@@ -37,7 +37,7 @@ impl BrickPtr {
 pub(super) struct BrickPtrRepr(u16);
 
 impl BrickPtrRepr {
-  pub fn solid_air() -> Self {
+  pub fn entirely_air() -> Self {
     Self(0)
   }
 
@@ -48,14 +48,32 @@ impl BrickPtrRepr {
       let ptr = x & (!HIGH_BIT16);
       BrickPtr::Pointer(ptr as usize)
     } else {
-      let foxel = u8::try_from(x)
+      let foxel = u8::try_from(x & 0xff)
         .ok()
         .and_then(|i| Foxel::try_from(i).ok())
-        .unwrap_or(Foxel::Air);
+        .unwrap_or(Foxel::Invalid);
       BrickPtr::Solid(foxel)
     }
   }
 }
 
-#[derive(Debug, Clone)]
-pub struct Brick(pub [Foxel; Hexadecitree::FOXELS_PER_BRICK]);
+#[derive(Debug, Clone, Copy, NoUninit)]
+#[repr(transparent)]
+pub struct Brick(pub [FoxelRepr; Hexadecitree::FOXELS_PER_BRICK]);
+
+impl Hexadecitree {
+  pub fn upload(&self, bytes: &mut Vec<u8>) {
+    bytes.clear();
+    bytes.extend_from_slice(bytemuck::cast_slice(&*self.grid));
+    debug_assert_eq!(bytes.len(), Hexadecitree::BRICKS_BYTES);
+
+    bytes.extend_from_slice(bytemuck::cast_slice(
+      self.composite_bricks.as_slice(),
+    ));
+    if bytes.len() > Hexadecitree::MAX_UPLOAD_BYTE_COUNT {
+      panic!("tried to ship {} bytes to the gpu but that was more than the allowed {}", bytes.len(), Hexadecitree::MAX_UPLOAD_BYTE_COUNT);
+    }
+    // resize it to the size of the image, mandatory
+    bytes.resize(Hexadecitree::TRANSFER_IMAGE_SIZE_SQ, 0);
+  }
+}

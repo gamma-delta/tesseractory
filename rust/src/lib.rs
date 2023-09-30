@@ -9,7 +9,7 @@ use godot::prelude::{Color, Gd, Resource};
 use math::hexadecitree::Hexadecitree;
 use player::Player;
 use ultraviolet::Vec4;
-use world::{Foxel, World};
+use world::{foxel::Foxel, World};
 
 pub struct WorldState {
   world: World,
@@ -24,7 +24,8 @@ impl WorldState {
     let mut world = World::new(sun_dir);
     world.setup_sample_scene();
 
-    let player = Player::new(Vec4::new(0.0, -3.0, 0.001, 0.5));
+    // let player = Player::new(Vec4::new(0.0, -3.0, 0.001, 0.5));
+    let player = Player::new(Vec4::new(0.0, 0.0, 0.0, 0.0));
 
     Self {
       world,

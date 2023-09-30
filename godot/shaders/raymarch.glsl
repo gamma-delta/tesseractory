@@ -1,11 +1,16 @@
 #[compute]
 #version 460
 
-layout(binding = 0) uniform CONSTANTS {
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform Consts {
   uint TREE_DEPTH;
   uint TREE_MAX_COORD;
   uint TREE_MIN_COORD;
 };
+
+layout(set = 0, binding = 1) restrict buffer Hexadecitree tree;
+layout(rgba32f, set = 0, binding = 2) restrict uniform image2D imgOutput;
 
 // =====
 // GEOMETRIC ALGEBRA
@@ -169,7 +174,8 @@ uint _H_stepDownPos(inout ivec4 pos, bool depthZero) {
   return (idx2 << 4u) | idx1;
 }
 
-// Rather than recurse, use a loop
+// Rather than recurse, use a loop.
+// Note that the out idx is bytes within the u32
 bool _H_get(Hexadecitree self, ivec4 pos, out uint foxelIdx) {
   if (any(greaterThan(pos, ivec4(1023))) || any(lessThan(pos, ivec4(-1024)))) {
     return false;    
@@ -214,11 +220,6 @@ bool _H_get(Hexadecitree self, ivec4 pos, out uint foxelIdx) {
 // =====
 // THE ACTUAL SHADER
 // =====
-
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-// layout() restrict readonly uniform Hexadecitree tree;
-layout(rgba8, binding = 1) restrict uniform image2D imgOutput;
 
 void main() {
   ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);

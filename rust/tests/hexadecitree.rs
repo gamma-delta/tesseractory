@@ -1,7 +1,7 @@
 use itertools::iproduct;
 use tesseractory::{
   math::{hexadecitree::Hexadecitree, BlockPos},
-  world::Foxel,
+  world::foxel::Foxel,
 };
 
 #[test]

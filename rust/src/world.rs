@@ -1,13 +1,15 @@
-use bytemuck::NoUninit;
+pub mod foxel;
+
 use getset::{CopyGetters, Getters};
 use godot::prelude::Color;
-use num_enum::TryFromPrimitive;
 use ultraviolet::Vec4;
 
 use crate::math::{
   hexadecitree::{Hexadecitree, SetFoxelError},
   BlockPos,
 };
+
+use self::foxel::Foxel;
 
 #[derive(CopyGetters, Getters)]
 pub struct World {
@@ -44,50 +46,5 @@ impl World {
     foxel: Foxel,
   ) -> Result<Foxel, SetFoxelError> {
     self.foxels.set(pos, foxel)
-  }
-}
-
-/// Foxes are imaginary creatures that exist only in dreams.
-/// For reasons they can't explain, everyone knows what a fox looks like,
-/// but no one can ever remember having seen one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, NoUninit, TryFromPrimitive)]
-#[repr(u8)]
-pub enum Foxel {
-  Air,
-  Red,
-  Green,
-  Blue,
-  RG,
-  GB,
-  RB,
-  Black,
-  White,
-}
-
-impl Foxel {
-  pub fn transparent(&self) -> bool {
-    match self {
-      Foxel::Air => true,
-      _ => false,
-    }
-  }
-
-  pub fn color(&self) -> Color {
-    let t = 1.0;
-    let f = 0.0;
-
-    let [r, g, b] = match self {
-      Foxel::Air => panic!(),
-      Foxel::Red => [t, f, f],
-      Foxel::Green => [f, t, f],
-      Foxel::Blue => [f, f, t],
-      Foxel::RG => [t, t, f],
-      Foxel::GB => [f, t, t],
-      Foxel::RB => [t, f, t],
-      Foxel::Black => [f, f, f],
-      Foxel::White => [t, t, t],
-    };
-
-    Color::from_rgba(r, g, b, 1.0)
   }
 }

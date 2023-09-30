@@ -100,15 +100,27 @@ pause={
 
 [shader_globals]
 
-TREE_DEPTH={
+TREE_COMPOSITE_BRICK_COUNT={
 "type": "uint",
 "value": 0
 }
-TREE_MAX_COORD={
+TREE_FOXELS_ACROSS_BRICK={
+"type": "uint",
+"value": 0
+}
+TREE_BRICKS_ACROSS_WORLD={
 "type": "uint",
 "value": 0
 }
 TREE_MIN_COORD={
+"type": "int",
+"value": 0
+}
+TREE_MAX_COORD={
+"type": "int",
+"value": 0
+}
+TREE_BRICKS_BYTES={
 "type": "uint",
 "value": 0
 }

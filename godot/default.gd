@@ -11,9 +11,13 @@ func _ready():
   Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
   get_window().connect("focus_entered", self.on_focus)
   get_window().connect("focus_exited", self.on_unfocus)
+  
+  (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex)
 
 func _process(_delta: float):
   world_ui.set_debug_info(tesser.debug_string())
+  
+  self.tesser.apply_per_tick_uniforms(self.screen.material)
 
 func _input(event: InputEvent):
   if event.is_action_pressed("exit"):
