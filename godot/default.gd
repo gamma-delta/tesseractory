@@ -1,6 +1,6 @@
 extends Node3D
 
-@onready var tesser : TesseractoryWorldHandler = %TesseractoryWorldHandler
+@onready var tesser : TesseractoryGodotBridge = %TesseractoryGodotBridge
 @onready var viewport : SubViewport = %ScreenViewport
 @onready var screen : Control = %ScreenRender
 

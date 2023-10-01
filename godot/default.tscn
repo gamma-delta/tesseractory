@@ -45,7 +45,7 @@ grow_vertical = 2
 [node name="StopWhenPaused" type="Node" parent="."]
 process_mode = 1
 
-[node name="TesseractoryWorldHandler" type="TesseractoryWorldHandler" parent="StopWhenPaused"]
+[node name="TesseractoryGodotBridge" type="TesseractoryGodotBridge" parent="StopWhenPaused"]
 cfg = ExtResource("2_2kyj1")
 unique_name_in_owner = true
 

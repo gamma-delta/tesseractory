@@ -1,28 +1,34 @@
 pub mod foxel;
 
-use getset::{CopyGetters, Getters};
-use godot::prelude::Color;
+use getset::{CopyGetters, Getters, MutGetters};
 use ultraviolet::Vec4;
 
-use crate::math::{
-  hexadecitree::{Hexadecitree, SetFoxelError},
-  BlockPos,
+use crate::{
+  math::{hexadecitree::Hexadecitree, BlockPos},
+  player::Player,
 };
 
 use self::foxel::Foxel;
 
-#[derive(CopyGetters, Getters)]
+#[derive(CopyGetters, Getters, MutGetters)]
 pub struct World {
   #[getset(get = "pub")]
   foxels: Hexadecitree,
+  #[getset(get = "pub", get_mut = "pub")]
+  player: Player,
   #[getset(get_copy = "pub")]
   sun_dir: Vec4,
 }
 
 impl World {
-  pub fn new(sun_dir: Vec4) -> World {
+  pub fn new(sun_dir: Vec4, player_pos: Vec4) -> World {
     let foxels = Hexadecitree::new();
-    Self { foxels, sun_dir }
+    let player = Player::new(player_pos);
+    Self {
+      foxels,
+      sun_dir,
+      player,
+    }
   }
 
   pub fn setup_sample_scene(&mut self) {
@@ -34,17 +40,5 @@ impl World {
       f.set(BlockPos::new(0, 0, v, 0), Foxel::Blue).unwrap();
       f.set(BlockPos::new(0, 0, 0, v), Foxel::RB).unwrap();
     }
-  }
-
-  pub fn get_foxel(&self, pos: BlockPos) -> Option<Foxel> {
-    self.foxels.get(pos)
-  }
-
-  pub fn set_foxel(
-    &mut self,
-    pos: BlockPos,
-    foxel: Foxel,
-  ) -> Result<Foxel, SetFoxelError> {
-    self.foxels.set(pos, foxel)
   }
 }

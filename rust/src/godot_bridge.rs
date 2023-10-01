@@ -3,7 +3,7 @@ use godot::{
   prelude::*,
 };
 
-use crate::{math::hexadecitree::Hexadecitree, GameParams, WorldState};
+use crate::{math::hexadecitree::Hexadecitree, GameParams, TesseractoryGame};
 
 /// https://github.com/godotengine/godot/issues/57841
 const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_RF;
@@ -19,7 +19,7 @@ unsafe impl ExtensionLibrary for TesseractoryExtension {}
 #[derive(GodotClass)]
 #[class(base = Node)]
 #[allow(dead_code)]
-struct TesseractoryWorldHandler {
+struct TesseractoryGodotBridge {
   #[export]
   cfg: Option<Gd<Resource>>,
 
@@ -31,7 +31,7 @@ struct TesseractoryWorldHandler {
 
 struct OnReadyStuff {
   /// Only exists on _ready
-  world_state: WorldState,
+  game: TesseractoryGame,
 
   tree_image: Gd<Image>,
   tree_image_scratch: Vec<u8>,
@@ -39,7 +39,7 @@ struct OnReadyStuff {
 }
 
 #[godot_api]
-impl NodeVirtual for TesseractoryWorldHandler {
+impl NodeVirtual for TesseractoryGodotBridge {
   fn init(base: Base<Node>) -> Self {
     // apparently is initialized elsewhere
     let _ = env_logger::try_init();
@@ -53,7 +53,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
 
   fn ready(&mut self) {
     let params = GameParams::load(self.cfg.as_ref().unwrap());
-    let world_state = WorldState::new(params);
+    let game = TesseractoryGame::new(params);
 
     let mut tree_image = Image::create(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
@@ -66,7 +66,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
     let mut tree_tex =
       ImageTexture::create_from_image(tree_image.share()).unwrap();
 
-    world_state.world.foxels().upload(&mut scratch);
+    game.world.foxels().upload(&mut scratch);
     tree_image.set_data(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
@@ -77,7 +77,7 @@ impl NodeVirtual for TesseractoryWorldHandler {
     tree_tex.update(tree_image.share());
 
     self.on_ready = Some(OnReadyStuff {
-      world_state,
+      game,
       tree_image,
       tree_image_scratch: scratch,
       tree_tex,
@@ -115,33 +115,34 @@ impl NodeVirtual for TesseractoryWorldHandler {
   fn process(&mut self, delta: f64) {}
 
   fn physics_process(&mut self, delta: f64) {
-    self.stuff_mut().world_state.physics_process(delta as f32);
+    self.stuff_mut().game.physics_process(delta as f32);
   }
 }
 
 #[godot_api]
-impl TesseractoryWorldHandler {
+impl TesseractoryGodotBridge {
   #[func]
   pub fn debug_string(&self) -> GodotString {
     let stuff = self.stuff();
-    stuff.world_state.debug_info().into()
+    stuff.game.debug_info().into()
   }
 
   #[func]
   pub fn apply_per_tick_uniforms(&self, mut shader: Gd<ShaderMaterial>) {
     let stuff = self.stuff();
 
-    let pp = stuff.world_state.player.pos();
+    let player = stuff.game.world.player();
+    let pp = player.pos();
     let g_playerpos = Vector4::new(pp.x, pp.y, pp.z, pp.w);
     shader.set_shader_parameter("playerPos".into(), g_playerpos.to_variant());
-    let look = stuff.world_state.player.look();
+    let look = player.look();
     let uughgh = array![
       look.s, look.bv.xy, look.bv.xz, look.bv.xw, look.bv.yz, look.bv.yw,
       look.bv.zw, look.p,
     ];
     shader.set_shader_parameter("playerLookRaw".into(), uughgh.to_variant());
 
-    let cfg = &stuff.world_state.params;
+    let cfg = &stuff.game.params;
     shader
       .set_shader_parameter("focalDist".into(), cfg.focal_dist.to_variant());
     shader.set_shader_parameter("fov".into(), cfg.fov.to_variant());
@@ -163,7 +164,7 @@ impl TesseractoryWorldHandler {
   }
 }
 
-impl TesseractoryWorldHandler {
+impl TesseractoryGodotBridge {
   fn stuff(&self) -> &OnReadyStuff {
     self.on_ready.as_ref().unwrap()
   }

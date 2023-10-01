@@ -117,7 +117,9 @@ impl AxisCamera {
   /// W is imaginary, for the scroll wheel
   pub fn transform_movement(&self, movement: Vec4) -> Vec4 {
     // If we're looking up or down we still want flight to move up.
-    let mut raw_move = self.rotor() * movement;
+    let non_x_movement = Vec4::new(0.0, 1.0, 1.0, 1.0) * movement;
+    let mut raw_move =
+      Rotor4::from_angle_plane(self.rot_yz, Bivec4::unit_yz()) * non_x_movement;
     raw_move.x = movement.x;
     raw_move
   }

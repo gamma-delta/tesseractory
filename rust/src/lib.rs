@@ -11,31 +11,23 @@ use player::Player;
 use ultraviolet::Vec4;
 use world::{foxel::Foxel, World};
 
-pub struct WorldState {
+pub struct TesseractoryGame {
   world: World,
-  player: Player,
 
   params: GameParams,
 }
 
-impl WorldState {
+impl TesseractoryGame {
   pub fn new(params: GameParams) -> Self {
     let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.1).normalized();
-    let mut world = World::new(sun_dir);
+    let mut world = World::new(sun_dir, Vec4::new(0.0, -3.0, 0.001, 0.5));
     world.setup_sample_scene();
 
-    let player = Player::new(Vec4::new(0.0, -3.0, 0.001, 0.5));
-    // let player = Player::new(Vec4::new(0.0, 0.0, 0.0, 0.0));
-
-    Self {
-      world,
-      player,
-      params,
-    }
+    Self { world, params }
   }
 
   pub fn physics_process(&mut self, delta: f32) {
-    self.player.physics_process(delta, &self.params);
+    self.world.player_mut().physics_process(delta, &self.params);
   }
 
   pub fn debug_info(&self) -> String {
@@ -46,7 +38,7 @@ impl WorldState {
       godot::engine::Engine::singleton().get_frames_per_second()
     );
 
-    self.player.debug_info(&mut w);
+    self.world.player().debug_info(&mut w);
 
     w += &format!(
       "Composite bricks: {} / {}\n",
