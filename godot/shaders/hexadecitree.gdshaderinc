@@ -124,21 +124,11 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
   
   bool lastWasAirBrick = false;
   for(uint i = 0u; i < 32u; i++) {
-    vec4 exitPoses;
-    if (!lastWasAirBrick) {
-      // Standard case
-      exitPoses = vec4(cursor + signums);
-    } else {
-      // If positive dir, distance to 8
-      // If negative dir, distance to 0
-      // If zero, zero
-      int FA = int(TREE_FOXELS_ACROSS_BRICK);
-      ivec4 subpos = ((cursor) % FA + FA) % FA;
-      // thanks gdscript for not defining mix for ivecs
-      ivec4 target = ivec4(FA) * ivec4(greaterThan(dir, vec4(0)));
-      ivec4 dist = abs(subpos - target);
-      exitPoses = vec4(cursor + dist * signums);
-    }
+    // TODO: figure out how to skip empty foxels
+    float stride = 1.0;
+    // float stride = lastWasAirBrick ? float(TREE_FOXELS_ACROSS_BRICK) : 1.0;
+
+    vec4 exitPoses = vec4(cursor) + vec4(signums) * stride;
     vec4 rawExitTimes = fma(exitPoses, dirRecip, slopeSomething);
     vec4 exitTimes = rawExitTimes * nonZeroDirs + zeroToSuperBig;
     // auugh

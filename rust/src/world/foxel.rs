@@ -1,5 +1,4 @@
-use bytemuck::{NoUninit, Pod, Zeroable};
-use godot::prelude::Color;
+use bytemuck::{Pod, Zeroable};
 use num_enum::TryFromPrimitive;
 
 /// Foxes are imaginary creatures that exist only in dreams.
@@ -27,26 +26,6 @@ impl Foxel {
       Foxel::Air => true,
       _ => false,
     }
-  }
-
-  pub fn color(&self) -> Color {
-    let t = 1.0;
-    let f = 0.0;
-
-    let [r, g, b] = match self {
-      Foxel::Air => panic!(),
-      Foxel::Red => [t, f, f],
-      Foxel::Green => [f, t, f],
-      Foxel::Blue => [f, f, t],
-      Foxel::RG => [t, t, f],
-      Foxel::GB => [f, t, t],
-      Foxel::RB => [t, f, t],
-      Foxel::Black => [f, f, f],
-      Foxel::White => [t, t, t],
-      Foxel::Invalid => [t, t, t],
-    };
-
-    Color::from_rgba(r, g, b, 1.0)
   }
 
   pub fn encode(self) -> FoxelRepr {
