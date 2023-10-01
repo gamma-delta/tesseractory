@@ -13,7 +13,7 @@ func _ready():
   get_window().connect("focus_entered", self.on_focus)
   get_window().connect("focus_exited", self.on_unfocus)
 
-  self.viewport.size = self.tesser.viewport_size()
+  self.viewport.size = self.tesser.viewport_size() 
   (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex())
 
 

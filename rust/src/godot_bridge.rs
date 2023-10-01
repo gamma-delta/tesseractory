@@ -8,8 +8,8 @@ use crate::{math::hexadecitree::Hexadecitree, GameParams, WorldState};
 /// https://github.com/godotengine/godot/issues/57841
 const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_RF;
 
-const VIEWPORT_WIDTH: u32 = 640;
-const VIEWPORT_HEIGHT: u32 = 480;
+const VIEWPORT_WIDTH: u32 = 1000;
+const VIEWPORT_HEIGHT: u32 = 600;
 
 struct TesseractoryExtension;
 

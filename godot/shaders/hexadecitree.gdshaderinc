@@ -99,8 +99,8 @@ uint H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
   } else {
     // Solid brick
     foxel = brickPtr & 0xffu;
-    // return (foxel == 0u ? H_GET_AIR_BRICK : H_GET_FOXEL);
-    return H_GET_FOXEL;
+    return (foxel == 0u ? H_GET_AIR_BRICK : H_GET_FOXEL);
+    // return H_GET_FOXEL;
   }
 }
 
@@ -122,13 +122,28 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
   vec4 nonZeroDirs = vec4(notEqual(dir, vec4(0.0)));
   vec4 zeroToSuperBig = 999999.0 * vec4(equal(dir, vec4(0.0)));
   
+  bool lastWasAirBrick = false;
   for(uint i = 0u; i < 32u; i++) {
-    vec4 exitPoses = vec4(cursor + signums);
+    vec4 exitPoses;
+    if (!lastWasAirBrick) {
+      // Standard case
+      exitPoses = vec4(cursor + signums);
+    } else {
+      // If positive dir, distance to 8
+      // If negative dir, distance to 0
+      // If zero, zero
+      int FA = int(TREE_FOXELS_ACROSS_BRICK);
+      ivec4 subpos = ((cursor) % FA + FA) % FA;
+      // thanks gdscript for not defining mix for ivecs
+      ivec4 target = ivec4(FA) * ivec4(greaterThan(dir, vec4(0)));
+      ivec4 dist = abs(subpos - target);
+      exitPoses = vec4(cursor + dist * signums);
+    }
     vec4 rawExitTimes = fma(exitPoses, dirRecip, slopeSomething);
     vec4 exitTimes = rawExitTimes * nonZeroDirs + zeroToSuperBig;
     // auugh
     float exitTime = min(exitTimes.x, min(exitTimes.y, min(exitTimes.z, exitTimes.w)));
-    if (exitTime <= 0.0) {
+    if (exitTime < 0.0) {
       hit.foxel = 5u;
       return true;
     }
@@ -140,11 +155,15 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
     ivec4 cursorInc = minTimeMap * signums;
 
     cursor += cursorInc;
+    lastWasAirBrick = false;
     
     uint foxel;
     uint res = H_get(tree, cursor + cursorOffset, foxel);
     if (res == H_GET_OOB) {
       return false;
+    } else if (res == H_GET_AIR_BRICK) {
+      lastWasAirBrick = true;
+      // fallthrough
     } else if (res == H_GET_FOXEL && foxel != 0u) {
       hit.foxel = foxel;
       hit.normal = -vec4(cursorInc);
