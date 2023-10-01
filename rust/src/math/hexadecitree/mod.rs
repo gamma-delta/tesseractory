@@ -49,7 +49,7 @@ impl Hexadecitree {
     Self::BRICKS_BYTES + Self::MAX_COMPOSITE_BRICKS_BYTES;
 
   /// Each pixel is 4 bytes due to Aughgh
-  pub const TRANSFER_IMAGE_SIZE: usize = 1024;
+  pub const TRANSFER_IMAGE_SIZE: usize = 4096;
   pub const TRANSFER_IMAGE_SIZE_SQ: usize = Self::TRANSFER_IMAGE_SIZE.pow(2);
 
   pub fn new() -> Self {

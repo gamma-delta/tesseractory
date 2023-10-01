@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_6kp6e")
-fov = 0.2
-focal_dist = 7.0
+fov = 2.0
+focal_dist = 0.5
 look_speed = 0.15
 walk_speed = 6.0
 fly_speed = 5.0

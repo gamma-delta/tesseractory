@@ -70,7 +70,7 @@ impl GameParams {
   pub fn load(cfg: &Gd<Resource>) -> Self {
     Self {
       focal_dist: cfg.totally::<f32>("focal_dist") / 1_000.0,
-      fov: cfg.totally::<f32>("fov") / 10_000.0,
+      fov: cfg.totally::<f32>("fov"),
       player_walk_speed: cfg.totally("walk_speed"),
       player_fly_speed: cfg.totally("fly_speed"),
       look_speed: cfg.totally::<f32>("look_speed") / 100.0,

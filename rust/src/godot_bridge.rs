@@ -8,6 +8,9 @@ use crate::{math::hexadecitree::Hexadecitree, GameParams, WorldState};
 /// https://github.com/godotengine/godot/issues/57841
 const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_RF;
 
+const VIEWPORT_WIDTH: u32 = 640;
+const VIEWPORT_HEIGHT: u32 = 480;
+
 struct TesseractoryExtension;
 
 #[gdextension]
@@ -131,16 +134,32 @@ impl TesseractoryWorldHandler {
     let pp = stuff.world_state.player.pos();
     let g_playerpos = Vector4::new(pp.x, pp.y, pp.z, pp.w);
     shader.set_shader_parameter("playerPos".into(), g_playerpos.to_variant());
+    let look = stuff.world_state.player.look();
+    let uughgh = array![
+      look.s, look.bv.xy, look.bv.xz, look.bv.xw, look.bv.yz, look.bv.yw,
+      look.bv.zw, look.p,
+    ];
+    shader.set_shader_parameter("playerLookRaw".into(), uughgh.to_variant());
 
     let cfg = &stuff.world_state.params;
     shader
       .set_shader_parameter("focalDist".into(), cfg.focal_dist.to_variant());
     shader.set_shader_parameter("fov".into(), cfg.fov.to_variant());
+
+    shader.set_shader_parameter(
+      "aspectRatio".into(),
+      (VIEWPORT_WIDTH as f32 / VIEWPORT_HEIGHT as f32).to_variant(),
+    );
   }
 
   #[func]
   pub fn tree_tex(&self) -> Gd<ImageTexture> {
     self.stuff().tree_tex.share()
+  }
+
+  #[func]
+  pub fn viewport_size(&self) -> Vector2i {
+    Vector2i::new(VIEWPORT_WIDTH as _, VIEWPORT_HEIGHT as _)
   }
 }
 

@@ -13,7 +13,23 @@ struct Rotor4 {
 	float p;
 };
 
-vec4 r4_rotvec(const Rotor4 self, const vec4 a) {
+Rotor4 R4_decode(float[8] raw) {
+  return Rotor4(
+    raw[0],
+    Bivec4(
+      raw[1],
+      raw[2],
+      raw[3],
+      raw[4],
+      raw[5],
+      raw[6]
+    ),
+    raw[7]
+  );
+	
+}
+
+vec4 R4_rotvec(const Rotor4 self, const vec4 a) {
 	// Write out the values like this to make it easier to
 	// copy-paste Joe's code
 	float s = self.s;

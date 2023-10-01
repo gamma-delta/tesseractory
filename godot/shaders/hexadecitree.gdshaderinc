@@ -22,7 +22,8 @@ uint _H_index(sampler2D tree, uint idx) {
   );
   float raw = texelFetch(tree, coords, 0).r;
   uint bytes = floatBitsToUint(raw);
-  uint shift = 4u - subByte;
+  // uint shift = 3u - subByte;
+  uint shift = subByte;
   return (bytes >> (shift * 8u)) & 0xffu;
 }
 
@@ -117,30 +118,38 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
 
   vec4 dirRecip = 1.0 / dir;
   vec4 slopeSomething = -start * dirRecip;
+  // Prevent infinities
+  vec4 nonZeroDirs = vec4(notEqual(dir, vec4(0.0)));
+  vec4 zeroToSuperBig = 999999.0 * vec4(equal(dir, vec4(0.0)));
   
   for(uint i = 0u; i < 32u; i++) {
+    vec4 exitPoses = vec4(cursor + signums);
+    vec4 rawExitTimes = fma(exitPoses, dirRecip, slopeSomething);
+    vec4 exitTimes = rawExitTimes * nonZeroDirs + zeroToSuperBig;
+    // auugh
+    float exitTime = min(exitTimes.x, min(exitTimes.y, min(exitTimes.z, exitTimes.w)));
+    if (exitTime <= 0.0) {
+      hit.foxel = 5u;
+      return true;
+    }
+    // epsilon equal
+    ivec4 minTimeMap = ivec4(lessThan(
+      abs(exitTimes - exitTime),
+      vec4(0.00001)
+    ));
+    ivec4 cursorInc = minTimeMap * signums;
+
+    cursor += cursorInc;
+    
     uint foxel;
     uint res = H_get(tree, cursor + cursorOffset, foxel);
     if (res == H_GET_OOB) {
       return false;
     } else if (res == H_GET_FOXEL && foxel != 0u) {
       hit.foxel = foxel;
-      hit.normal = -vec4(signums);
+      hit.normal = -vec4(cursorInc);
       return true;
     }
-  
-    vec4 exitPoses = vec4(cursor + signums);
-    vec4 exitTimes = fma(exitPoses, dirRecip, slopeSomething);
-    // auugh
-    float exitTime = min(exitTimes.x, min(exitTimes.y, min(exitTimes.z, exitTimes.w)));
-    // epsilon equal
-    ivec4 minTimeMap = ivec4(lessThan(
-      abs(exitTimes - exitTime),
-      vec4(0.001)
-    ));
-    ivec4 cursorInc = minTimeMap * signums;
-
-    cursor += cursorInc;
   }
 
   return false;

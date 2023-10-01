@@ -63,6 +63,11 @@ pub struct Brick(pub [FoxelRepr; Hexadecitree::FOXELS_PER_BRICK]);
 
 impl Hexadecitree {
   pub fn upload(&self, bytes: &mut Vec<u8>) {
+    debug_assert!(
+      Hexadecitree::MAX_UPLOAD_BYTE_COUNT
+        <= Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4
+    );
+
     bytes.clear();
     bytes.extend_from_slice(bytemuck::cast_slice(&*self.grid));
     debug_assert_eq!(bytes.len(), Hexadecitree::BRICKS_BYTES);

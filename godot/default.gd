@@ -1,7 +1,8 @@
 extends Node3D
 
 @onready var tesser : TesseractoryWorldHandler = %TesseractoryWorldHandler
-@onready var screen : Control = %Screen
+@onready var viewport : SubViewport = %ScreenViewport
+@onready var screen : Control = %ScreenRender
 
 @onready var world_ui : WorldUI = %WorldUI
 @onready var pause_ui : Control = %PauseUI
@@ -11,8 +12,10 @@ func _ready():
   Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
   get_window().connect("focus_entered", self.on_focus)
   get_window().connect("focus_exited", self.on_unfocus)
-  
+
+  self.viewport.size = self.tesser.viewport_size()
   (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex())
+
 
 func _process(_delta: float):
   world_ui.set_debug_info(tesser.debug_string())
