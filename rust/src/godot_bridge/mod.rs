@@ -1,9 +1,14 @@
+mod api;
+
 use godot::{
   engine::{image, Image, ImageTexture, RenderingServer, ShaderMaterial},
   prelude::*,
 };
 
-use crate::{math::hexadecitree::Hexadecitree, GameParams, TesseractoryGame};
+use crate::{
+  godot_bridge::api::GdRotor4, math::hexadecitree::Hexadecitree, GameParams,
+  TesseractoryGame,
+};
 
 /// https://github.com/godotengine/godot/issues/57841
 const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_RF;
@@ -66,7 +71,7 @@ impl NodeVirtual for TesseractoryGodotBridge {
     let mut tree_tex =
       ImageTexture::create_from_image(tree_image.share()).unwrap();
 
-    game.world.foxels().upload(&mut scratch);
+    game.world.foxels.upload(&mut scratch);
     tree_image.set_data(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
@@ -111,12 +116,6 @@ impl NodeVirtual for TesseractoryGodotBridge {
       rs.global_shader_parameter_set(k.into(), v);
     }
   }
-
-  fn process(&mut self, delta: f64) {}
-
-  fn physics_process(&mut self, delta: f64) {
-    self.stuff_mut().game.physics_process(delta as f32);
-  }
 }
 
 #[godot_api]
@@ -131,11 +130,9 @@ impl TesseractoryGodotBridge {
   pub fn apply_per_tick_uniforms(&self, mut shader: Gd<ShaderMaterial>) {
     let stuff = self.stuff();
 
-    let player = stuff.game.world.player();
-    let pp = player.pos();
-    let g_playerpos = Vector4::new(pp.x, pp.y, pp.z, pp.w);
+    let g_playerpos = vec4_to_gd(stuff.game.camera_pos);
     shader.set_shader_parameter("playerPos".into(), g_playerpos.to_variant());
-    let look = player.look();
+    let look = stuff.game.camera_rot;
     let uughgh = array![
       look.s, look.bv.xy, look.bv.xz, look.bv.xw, look.bv.yz, look.bv.yw,
       look.bv.zw, look.p,
@@ -162,6 +159,15 @@ impl TesseractoryGodotBridge {
   pub fn viewport_size(&self) -> Vector2i {
     Vector2i::new(VIEWPORT_WIDTH as _, VIEWPORT_HEIGHT as _)
   }
+
+  // Player API stuff
+
+  #[func]
+  pub fn render_from(&mut self, pos: Vector4, rot: Gd<GdRotor4>) {
+    let mut stuff = self.stuff_mut();
+    stuff.game.camera_pos = vec4_from_gd(pos);
+    stuff.game.camera_rot = rot.bind().inner;
+  }
 }
 
 impl TesseractoryGodotBridge {
@@ -172,4 +178,14 @@ impl TesseractoryGodotBridge {
   fn stuff_mut(&mut self) -> &mut OnReadyStuff {
     self.on_ready.as_mut().unwrap()
   }
+}
+
+// Helper fns
+
+pub fn vec4_from_gd(v: Vector4) -> ultraviolet::Vec4 {
+  ultraviolet::Vec4::new(v.x, v.y, v.z, v.w)
+}
+
+pub fn vec4_to_gd(v: ultraviolet::Vec4) -> Vector4 {
+  Vector4::new(v.x, v.y, v.z, v.w)
 }

@@ -20,10 +20,12 @@ macro_rules! rotor4s {
         Self { s, bv, p }
       }
 
+      #[inline]
       pub fn identity() -> Self {
         Self::new($f::splat(1.0), $bv::zero(), $f::splat(0.0))
       }
 
+      #[inline]
       pub fn from_rotation_between(from: $v, to: $v) -> Self {
         let wedge = $bv::wedge(to, from);
         Self::new(
@@ -40,10 +42,12 @@ macro_rules! rotor4s {
         Self::new(cos, plane * -sin, $f::splat(0.0)).normalized()
       }
 
+      #[inline]
       pub fn mag_sq(&self) -> $f {
         self.s * self.s + self.bv.mag_sq() + self.p * self.p
       }
 
+      #[inline]
       pub fn mag(&self) -> $f {
         self.mag_sq().sqrt()
       }
@@ -65,6 +69,7 @@ macro_rules! rotor4s {
         me
       }
 
+      #[inline]
       pub fn reverse(&self) -> Self {
         Self::new(self.s, self.bv, self.p)
       }
@@ -204,6 +209,7 @@ macro_rules! rotor4s {
       /// Rotate the vector.
       ///
       /// https://joesubbi.github.io/code/rotor-code/
+      #[inline]
       fn mul(self, a: $v) -> Self::Output {
         let coeff = self.rot_coefficients();
         self.apply_rot_coefficients(coeff, a)
@@ -215,6 +221,7 @@ macro_rules! rotor4s {
       /// Composition of rotors.
       ///
       /// I did not write this myself thank god
+      #[inline]
       fn mul(self, rhs: $t) -> Self::Output {
         let a = self;
         let b = rhs;

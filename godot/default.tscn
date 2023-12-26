@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bipuhyuwlp8gs"]
+[gd_scene load_steps=9 format=3 uid="uid://bipuhyuwlp8gs"]
 
 [ext_resource type="Script" path="res://default.gd" id="1_8wfm5"]
 [ext_resource type="Resource" uid="uid://ifq18qbmmpdm" path="res://config.tres" id="2_2kyj1"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://dednugytpgg4i" path="res://textures/temp_atlas.png" id="3_bds7r"]
 [ext_resource type="PackedScene" uid="uid://da5cspbs8vsca" path="res://scenes/WorldUI.tscn" id="3_bgrba"]
 [ext_resource type="PackedScene" uid="uid://x0nqgmcwbo1m" path="res://scenes/PauseUI.tscn" id="4_e8iag"]
+[ext_resource type="Script" path="res://scripts/player/Player.gd" id="4_nrokl"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_arbk3"]
 shader = ExtResource("2_08noi")
@@ -44,6 +45,12 @@ grow_vertical = 2
 
 [node name="StopWhenPaused" type="Node" parent="."]
 process_mode = 1
+
+[node name="Player" type="Node" parent="StopWhenPaused"]
+script = ExtResource("4_nrokl")
+WALK_SPEED = 6.0
+FLY_SPEED = 5.0
+LOOK_SPEED = 0.1
 
 [node name="TesseractoryGodotBridge" type="TesseractoryGodotBridge" parent="StopWhenPaused"]
 cfg = ExtResource("2_2kyj1")

@@ -6,13 +6,15 @@ pub mod world;
 
 use extensions::GodotObjectExt;
 use godot::prelude::{Color, Gd, Resource};
-use math::hexadecitree::Hexadecitree;
+use math::{geo::Rotor4, hexadecitree::Hexadecitree};
 use player::Player;
 use ultraviolet::Vec4;
 use world::{foxel::Foxel, World};
 
 pub struct TesseractoryGame {
   world: World,
+  camera_pos: Vec4,
+  camera_rot: Rotor4,
 
   params: GameParams,
 }
@@ -20,14 +22,15 @@ pub struct TesseractoryGame {
 impl TesseractoryGame {
   pub fn new(params: GameParams) -> Self {
     let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.1).normalized();
-    let mut world = World::new(sun_dir, Vec4::new(0.0, -3.0, 0.001, 0.5));
+    let mut world = World::new(sun_dir);
     world.setup_sample_scene();
 
-    Self { world, params }
-  }
-
-  pub fn physics_process(&mut self, delta: f32) {
-    self.world.player_mut().physics_process(delta, &self.params);
+    Self {
+      world,
+      camera_pos: Vec4::zero(),
+      camera_rot: Rotor4::identity(),
+      params,
+    }
   }
 
   pub fn debug_info(&self) -> String {
@@ -38,11 +41,9 @@ impl TesseractoryGame {
       godot::engine::Engine::singleton().get_frames_per_second()
     );
 
-    self.world.player().debug_info(&mut w);
-
     w += &format!(
       "Composite bricks: {} / {}\n",
-      self.world.foxels().composite_brick_count(),
+      self.world.foxels.composite_brick_count(),
       Hexadecitree::COMPOSITE_BRICK_COUNT,
     );
 

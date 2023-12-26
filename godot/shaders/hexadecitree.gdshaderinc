@@ -3,10 +3,11 @@
 const uint _H_HIGH_BIT = 1u << 15u;
 
 // https://stackoverflow.com/questions/14997165/fastest-way-to-get-a-positive-modulo-in-c-c
-uint H_rem(int i, uint n) {
-  int ni = int(n);
-  return uint((i % ni + ni) % ni);
-}
+#define H_rem(i, n) ( uint((i % int(n) + int(n)) % int(n)) )
+// uint H_rem(int i, uint n) {
+//   int ni = int(n);
+//   return uint((i % ni + ni) % ni);
+// }
 
 // Return the idx'th byte of the tree.
 // https://github.com/godotengine/godot/issues/57841

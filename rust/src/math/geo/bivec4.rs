@@ -126,6 +126,7 @@ macro_rules! bivec4s {
     impl Mul<$t> for $bn {
       type Output = Self;
 
+      #[inline]
       fn mul(self, rhs: $t) -> Self::Output {
         let mut me = self.clone();
         me *= rhs;
@@ -134,6 +135,7 @@ macro_rules! bivec4s {
     }
 
     impl MulAssign<$t> for $bn {
+      #[inline]
       fn mul_assign(&mut self, rhs: $t) {
         self.xy *= rhs;
         self.xz *= rhs;

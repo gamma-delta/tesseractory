@@ -10,25 +10,15 @@ use crate::{
 
 use self::foxel::Foxel;
 
-#[derive(CopyGetters, Getters, MutGetters)]
 pub struct World {
-  #[getset(get = "pub")]
-  foxels: Hexadecitree,
-  #[getset(get = "pub", get_mut = "pub")]
-  player: Player,
-  #[getset(get_copy = "pub")]
-  sun_dir: Vec4,
+  pub foxels: Hexadecitree,
+  pub sun_dir: Vec4,
 }
 
 impl World {
-  pub fn new(sun_dir: Vec4, player_pos: Vec4) -> World {
+  pub fn new(sun_dir: Vec4) -> World {
     let foxels = Hexadecitree::new();
-    let player = Player::new(player_pos);
-    Self {
-      foxels,
-      sun_dir,
-      player,
-    }
+    Self { foxels, sun_dir }
   }
 
   pub fn setup_sample_scene(&mut self) {
