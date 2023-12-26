@@ -24,6 +24,10 @@ git = "https://github.com/godot-rust/gdext"
 branch = "master"
 # features = ["custom-godot"]
 
+[patch."https://github.com/godot-rust/godot4-prebuilt".godot4-prebuilt]
+git = "https://github.com//godot-rust/godot4-prebuilt"
+branch = "4.2"
+
 [profile.dev.package.'*']
 opt-level = 3
 

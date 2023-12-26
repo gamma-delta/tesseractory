@@ -107,11 +107,12 @@ uint H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
 struct H_Hit {
   uint foxel;
   vec4 normal;
+  vec3 texpos;
 };
 
 bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
   ivec4 signums = ivec4(sign(dir));
-  // only mutable thing!!
+  // only mutable things!!
   ivec4 cursor = ivec4(floor(start)) + ivec4(lessThan(dir, vec4(0)));
 
   ivec4 cursorOffset = -1 * ivec4(lessThan(dir, vec4(0)));
@@ -122,7 +123,6 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
   vec4 nonZeroDirs = vec4(notEqual(dir, vec4(0.0)));
   vec4 zeroToSuperBig = 999999.0 * vec4(equal(dir, vec4(0.0)));
   
-  bool lastWasAirBrick = false;
   for(uint i = 0u; i < 32u; i++) {
     // TODO: figure out how to skip empty foxels
     float stride = 1.0;
@@ -133,10 +133,10 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
     vec4 exitTimes = rawExitTimes * nonZeroDirs + zeroToSuperBig;
     // auugh
     float exitTime = min(exitTimes.x, min(exitTimes.y, min(exitTimes.z, exitTimes.w)));
-    if (exitTime < 0.0) {
-      hit.foxel = 5u;
-      return true;
-    }
+    // if (exitTime < 0.0) {
+    //   hit.foxel = 5u;
+    //   return true;
+    // }
     // epsilon equal
     ivec4 minTimeMap = ivec4(lessThan(
       abs(exitTimes - exitTime),
@@ -145,18 +145,28 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
     ivec4 cursorInc = minTimeMap * signums;
 
     cursor += cursorInc;
-    lastWasAirBrick = false;
     
     uint foxel;
     uint res = H_get(tree, cursor + cursorOffset, foxel);
     if (res == H_GET_OOB) {
       return false;
-    } else if (res == H_GET_AIR_BRICK) {
-      lastWasAirBrick = true;
-      // fallthrough
     } else if (res == H_GET_FOXEL && foxel != 0u) {
       hit.foxel = foxel;
       hit.normal = -vec4(cursorInc);
+      vec4 rawHitpos = fract(start + dir * exitTime);
+      if (minTimeMap.x > 0) {
+        hit.texpos = rawHitpos.yzw;
+        // hit.texpos = vec3(1.0, 0.0, 0.0);
+      } else if (minTimeMap.y > 0) {
+        hit.texpos = rawHitpos.xzw;
+        // hit.texpos = vec3(0.0, 1.0, 0.0);
+      } else if (minTimeMap.z > 0) {
+        hit.texpos = rawHitpos.xyw;
+        // hit.texpos = vec3(0.0, 0.0, 1.0);
+      } else {
+        hit.texpos = rawHitpos.xyz;
+        // hit.texpos = vec3(1.0, 0.0, 1.0);
+      }
       return true;
     }
   }

@@ -16,7 +16,7 @@ shader_parameter/fov = null
 shader_parameter/aspectRatio = null
 shader_parameter/foxelPalette = ExtResource("3_bds7r")
 
-[node name="Holder" type="Node3D"]
+[node name="Holder" type="Node"]
 process_mode = 3
 script = ExtResource("1_8wfm5")
 

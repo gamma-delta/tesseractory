@@ -1,4 +1,4 @@
-extends Node3D
+extends Node
 
 @onready var tesser : TesseractoryGodotBridge = %TesseractoryGodotBridge
 @onready var viewport : SubViewport = %ScreenViewport
@@ -27,7 +27,7 @@ func _input(event: InputEvent):
     get_tree().quit()
   
   if event.is_action_pressed("pause"):
-    var paused  := get_tree().paused
+    var paused := get_tree().paused
     if paused:
       # Unpause
       pause_ui.hide()

@@ -30,9 +30,10 @@ void fragment() {
       float(hit.foxel / 16u) / 16.0
     );
     vec4 col = texture(foxelPalette, coords);
+    // vec4 col = vec4(hit.texpos, 1.0);
     float light = dot(-hit.normal, normalize(
       vec4(-0.5, 0.4, 0.2, 0.1)));
-    COLOR = col * clamp(light, 0.5, 1.0);
+    COLOR = col * clamp(light, 0.8, 1.0);
   } else {
     COLOR = vec4(UV.x, UV.y, 0.0, 1.0);
   }
