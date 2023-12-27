@@ -1,4 +1,4 @@
-mod api;
+mod math;
 
 use godot::{
   engine::{image, Image, ImageTexture, RenderingServer, ShaderMaterial},
@@ -6,7 +6,7 @@ use godot::{
 };
 
 use crate::{
-  godot_bridge::api::GdRotor4, math::hexadecitree::Hexadecitree, GameParams,
+  godot_bridge::math::GdRotor4, math::hexadecitree::Hexadecitree, GameParams,
   TesseractoryGame,
 };
 
@@ -164,7 +164,7 @@ impl TesseractoryGodotBridge {
 
   #[func]
   pub fn render_from(&mut self, pos: Vector4, rot: Gd<GdRotor4>) {
-    let mut stuff = self.stuff_mut();
+    let stuff = self.stuff_mut();
     stuff.game.camera_pos = vec4_from_gd(pos);
     stuff.game.camera_rot = rot.bind().inner;
   }

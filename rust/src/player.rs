@@ -1,3 +1,5 @@
+#![cfg(target_os = "never compile me")]
+
 use std::f32::consts::TAU;
 
 use crate::{

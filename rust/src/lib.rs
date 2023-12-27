@@ -7,7 +7,6 @@ pub mod world;
 use extensions::GodotObjectExt;
 use godot::prelude::{Color, Gd, Resource};
 use math::{geo::Rotor4, hexadecitree::Hexadecitree};
-use player::Player;
 use ultraviolet::Vec4;
 use world::{foxel::Foxel, World};
 
@@ -54,9 +53,6 @@ impl TesseractoryGame {
 pub struct GameParams {
   pub focal_dist: f32,
   pub fov: f32,
-  pub player_walk_speed: f32,
-  pub player_fly_speed: f32,
-  pub look_speed: f32,
 }
 
 impl GameParams {
@@ -64,9 +60,6 @@ impl GameParams {
     Self {
       focal_dist: cfg.totally::<f32>("focal_dist") / 1_000.0,
       fov: cfg.totally::<f32>("fov"),
-      player_walk_speed: cfg.totally("walk_speed"),
-      player_fly_speed: cfg.totally("fly_speed"),
-      look_speed: cfg.totally::<f32>("look_speed") / 100.0,
     }
   }
 }

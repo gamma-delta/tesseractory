@@ -2,7 +2,7 @@ use godot::prelude::*;
 
 use crate::math::geo::*;
 
-use super::vec4_from_gd;
+use super::{vec4_from_gd, vec4_to_gd};
 
 #[derive(GodotClass, Debug, Clone, Copy)]
 #[class()]
@@ -73,6 +73,16 @@ impl GdRotor4 {
   #[func]
   fn from_angle_plane(angle: f32, plane: Gd<GdBivec4>) -> Gd<GdRotor4> {
     r(Rotor4::from_angle_plane(angle, plane.bind().inner))
+  }
+
+  #[func]
+  fn composed(&self, rhs: Gd<GdRotor4>) -> Gd<GdRotor4> {
+    r(self.inner * rhs.bind().inner)
+  }
+
+  #[func]
+  fn transform_vec(&self, rhs: Vector4) -> Vector4 {
+    vec4_to_gd(self.inner * vec4_from_gd(rhs))
   }
 }
 

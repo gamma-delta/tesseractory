@@ -1,12 +1,8 @@
 pub mod foxel;
 
-use getset::{CopyGetters, Getters, MutGetters};
 use ultraviolet::Vec4;
 
-use crate::{
-  math::{hexadecitree::Hexadecitree, BlockPos},
-  player::Player,
-};
+use crate::math::{hexadecitree::Hexadecitree, BlockPos};
 
 use self::foxel::Foxel;
 
@@ -30,5 +26,7 @@ impl World {
       f.set(BlockPos::new(0, 0, v, 0), Foxel::Blue).unwrap();
       f.set(BlockPos::new(0, 0, 0, v), Foxel::RB).unwrap();
     }
+
+    f.set(BlockPos::new(3, 3, 3, 0), Foxel::GB).unwrap();
   }
 }

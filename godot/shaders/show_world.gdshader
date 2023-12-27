@@ -35,6 +35,17 @@ void fragment() {
       vec4(-0.5, 0.4, 0.2, 0.1)));
     COLOR = col * clamp(light, 0.8, 1.0);
   } else {
-    COLOR = vec4(UV.x, UV.y, 0.0, 1.0);
+    vec4 flipRay = abs(rayDir);
+    vec4 squishRay = clamp(
+      8.0 * (flipRay * flipRay * flipRay * flipRay - 1.0) + 1.0, 
+      0, 1
+    );
+    
+    vec3 xCol = (1.0 - vec3(1, 0, 0)) * squishRay.x;
+    vec3 yCol = (1.0 - vec3(0, 1, 0)) * squishRay.y;
+    vec3 zCol = (1.0 - vec3(0, 0, 1)) * squishRay.z;
+    vec3 wCol = (1.0 - vec3(1, 0, 1)) * squishRay.w;
+    vec3 baseColor = vec3(0.9, 0.9, 0.95);
+    COLOR = vec4(clamp(baseColor - xCol - yCol - zCol - wCol, 0, 1), 1);
   }
 }

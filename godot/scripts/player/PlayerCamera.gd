@@ -1,7 +1,9 @@
 class_name PlayerCamera extends Node
 
-func rotor(player: Player) -> GdRotor4:
+var player: Player
+
+func rotor() -> GdRotor4:
   return GdRotor4.identity()
 
-func transformed_movement(raw: Vector4) -> Vector4:
-  return raw
+func movement(delta: float) -> Vector4:
+  return Vector4.ZERO
