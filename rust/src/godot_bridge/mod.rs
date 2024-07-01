@@ -65,11 +65,11 @@ impl INode for TesseractoryGodotBridge {
     let game = TesseractoryGame::new(params);
 
     let scratch = PackedByteArray::from(
-      vec![0u8; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4].as_slice(),
+      vec![0u8; Hexadecitree::GPU_TRANSFER_IMAGE_SIZE_SQ * 4].as_slice(),
     );
     let tree_image = Image::create_from_data(
-      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
-      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
+      Hexadecitree::GPU_TRANSFER_IMAGE_SIZE as i32,
+      Hexadecitree::GPU_TRANSFER_IMAGE_SIZE as i32,
       false,
       TREE_IMG_FORMAT,
       scratch.clone(),
@@ -140,10 +140,10 @@ impl TesseractoryGodotBridge {
       .game
       .world
       .foxels
-      .upload(stuff.tree_scratch.as_mut_slice(), &cam);
+      .upload(stuff.tree_scratch.as_mut_slice(), &*cam.bind());
     stuff.tree_image.set_data(
-      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
-      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
+      Hexadecitree::GPU_TRANSFER_IMAGE_SIZE as i32,
+      Hexadecitree::GPU_TRANSFER_IMAGE_SIZE as i32,
       false,
       TREE_IMG_FORMAT,
       stuff.tree_scratch.clone(),

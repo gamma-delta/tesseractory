@@ -4,9 +4,6 @@ render_mode unshaded;
 #include "math.gdshaderinc"
 #include "hexadecitree.gdshaderinc"
 
-// https://github.com/godotengine/godot/issues/57841
-// Apparently we can bytemuck this and maybe save some perf?
-uniform usampler2D tree : filter_nearest;
 uniform sampler2D foxelPalette : filter_nearest;
 
 uniform vec4 playerPos;

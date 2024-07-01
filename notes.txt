@@ -3,3 +3,17 @@ How on earth is the foxel data sent to the GPU?
 As-is:
 0                 : BrickPtr(u16)[TOTAL_BRICK_COUNT]
 TREE_BRICKS_BYTES : Foxel[BRICK_SIZE][TOTAL_BRICK_COUNT]
+
+BrickPtrs are 2 bytes.
+- If the high-bit is set, then it's a 15-bit (or less) brick index.
+- Otherwise, the low 8 bits express a solid brick of that foxel.
+
+Cool theory ideas:
+0                 : BrickPtr(u8)[TOTAL_BRICK_COUNT]
+TREE_BRICKS_BYTES : Foxel[BRICK_SIZE][256]
+
+BrickPtrs are 1 byte.
+- No special solidity checks. But, brick #0 is always all-air.
+- This means we can only ship 255 unique bricks to the GPU; the hope is that we
+  don't need that many (because we can cull things we don't care for.)
+  That's still a lot of space!
