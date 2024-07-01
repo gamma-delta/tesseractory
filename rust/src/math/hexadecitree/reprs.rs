@@ -1,5 +1,7 @@
 //! GPU-friendly representations of stuff
 
+use std::time::Instant;
+
 use bytemuck::NoUninit;
 
 use crate::world::foxel::{Foxel, FoxelRepr};
@@ -62,24 +64,33 @@ impl BrickPtrRepr {
 pub struct Brick(pub [FoxelRepr; Hexadecitree::FOXELS_PER_BRICK]);
 
 impl Hexadecitree {
-  pub fn upload(&self, bytes: &mut Vec<u8>) {
+  pub fn upload(&self, bytes: &mut [u8]) {
     debug_assert!(
       Hexadecitree::MAX_UPLOAD_BYTE_COUNT
         <= Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4
     );
 
-    bytes.clear();
-    bytes.extend_from_slice(bytemuck::cast_slice(&*self.grid));
-    debug_assert_eq!(bytes.len(), Hexadecitree::BRICKS_BYTES);
+    bytes.fill(0);
+    (&mut bytes[..Hexadecitree::BRICKS_BYTES])
+      .copy_from_slice(bytemuck::cast_slice(&*self.grid));
+    let composite_bricks: &[u8] =
+      bytemuck::cast_slice(self.composite_bricks.as_slice());
+    (&mut bytes[Hexadecitree::BRICKS_BYTES
+      ..Hexadecitree::BRICKS_BYTES + composite_bricks.len()])
+      .copy_from_slice(composite_bricks);
 
-    bytes.extend_from_slice(bytemuck::cast_slice(
-      self.composite_bricks.as_slice(),
-    ));
-    if bytes.len() > Hexadecitree::MAX_UPLOAD_BYTE_COUNT {
-      panic!("tried to ship {} bytes to the gpu but that was more than the allowed {}", bytes.len(), Hexadecitree::MAX_UPLOAD_BYTE_COUNT);
-    }
+    // bytes.clear();
+    // bytes.extend_from_slice(bytemuck::cast_slice(&*self.grid));
+    // debug_assert_eq!(bytes.len(), Hexadecitree::BRICKS_BYTES);
+
+    // bytes.extend_from_slice(bytemuck::cast_slice(
+    //   self.composite_bricks.as_slice(),
+    // ));
+    // if bytes.len() > Hexadecitree::MAX_UPLOAD_BYTE_COUNT {
+    //   panic!("tried to ship {} bytes to the gpu but that was more than the allowed {}", bytes.len(), Hexadecitree::MAX_UPLOAD_BYTE_COUNT);
+    // }
     // resize it to the size of the image, mandatory
     // because the image is floats, ... ughh
-    bytes.resize(Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4, 0);
+    // bytes.resize(Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4, 0);
   }
 }

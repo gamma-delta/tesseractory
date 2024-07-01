@@ -7,6 +7,8 @@ extends Node
 @onready var world_ui : WorldUI = %WorldUI
 @onready var pause_ui : Control = %PauseUI
 
+@onready var player : Player = %Player
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
   Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -16,11 +18,21 @@ func _ready():
   self.viewport.size = self.tesser.viewport_size() 
   (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex())
 
-
 func _process(_delta: float):
   world_ui.set_debug_info(tesser.debug_string())
+  self.apply_shader_params()
+  %TesseractoryGodotBridge.upload_foxels()
+
+func apply_shader_params() -> void:
+  var shader := self.screen.material as ShaderMaterial
+  shader.set_shader_parameter("playerPos", self.player.position)
+  var look := self.player.rotation()
+  shader.set_shader_parameter("playerLookRaw", look.splat_to_array())
   
-  self.tesser.apply_per_tick_uniforms(self.screen.material)
+  shader.set_shader_parameter("focalDist", self.player.FOCAL_DIST)
+  shader.set_shader_parameter("fov", self.player.FOV)
+  
+  shader.set_shader_parameter("aspectRatio", 1000.0 / 600.0)
 
 func _input(event: InputEvent):
   if event.is_action_pressed("exit"):

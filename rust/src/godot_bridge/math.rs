@@ -84,6 +84,20 @@ impl GdRotor4 {
   fn transform_vec(&self, rhs: Vector4) -> Vector4 {
     vec4_to_gd(self.inner * vec4_from_gd(rhs))
   }
+
+  #[func]
+  fn splat_to_array(&self) -> PackedFloat32Array {
+    PackedFloat32Array::from(&[
+      self.inner.s,
+      self.inner.bv.xy,
+      self.inner.bv.xz,
+      self.inner.bv.xw,
+      self.inner.bv.yz,
+      self.inner.bv.yw,
+      self.inner.bv.zw,
+      self.inner.p,
+    ])
+  }
 }
 
 fn bv(bivec: Bivec4) -> Gd<GdBivec4> {

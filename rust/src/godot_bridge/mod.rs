@@ -1,5 +1,7 @@
 mod math;
 
+use std::time::Instant;
+
 use godot::{
   engine::{image, Image, ImageTexture, RenderingServer, ShaderMaterial},
   prelude::*,
@@ -37,8 +39,9 @@ struct OnReadyStuff {
   /// Only exists on _ready
   game: TesseractoryGame,
 
+  /// Keep this around to avoid having to realloc all the time
+  tree_scratch: PackedByteArray,
   tree_image: Gd<Image>,
-  tree_image_scratch: Vec<u8>,
   tree_tex: Gd<ImageTexture>,
 }
 
@@ -59,33 +62,26 @@ impl INode for TesseractoryGodotBridge {
     let params = GameParams::load(self.cfg.as_ref().unwrap());
     let game = TesseractoryGame::new(params);
 
-    let mut tree_image = Image::create(
+    let scratch = PackedByteArray::from(
+      vec![0u8; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4].as_slice(),
+    );
+    let tree_image = Image::create_from_data(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       false,
       TREE_IMG_FORMAT,
+      scratch.clone(),
     )
     .unwrap();
-    let mut scratch = vec![0; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ];
-    let mut tree_tex =
-      ImageTexture::create_from_image(tree_image.clone()).unwrap();
-
-    game.world.foxels.upload(&mut scratch);
-    tree_image.set_data(
-      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
-      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
-      false,
-      TREE_IMG_FORMAT,
-      PackedByteArray::from(scratch.as_slice()),
-    );
-    tree_tex.update(tree_image.clone());
-
+    let tree_tex = ImageTexture::create_from_image(tree_image.clone()).unwrap();
     self.on_ready = Some(OnReadyStuff {
       game,
-      tree_image,
-      tree_image_scratch: scratch,
       tree_tex,
+      tree_image,
+      tree_scratch: scratch,
     });
+
+    self.upload_foxels();
 
     let mut rs = RenderingServer::singleton();
     for (k, v) in [
@@ -126,30 +122,6 @@ impl TesseractoryGodotBridge {
   }
 
   #[func]
-  pub fn apply_per_tick_uniforms(&self, mut shader: Gd<ShaderMaterial>) {
-    let stuff = self.stuff();
-
-    let g_playerpos = vec4_to_gd(stuff.game.camera_pos);
-    shader.set_shader_parameter("playerPos".into(), g_playerpos.to_variant());
-    let look = stuff.game.camera_rot;
-    let uughgh = array![
-      look.s, look.bv.xy, look.bv.xz, look.bv.xw, look.bv.yz, look.bv.yw,
-      look.bv.zw, look.p,
-    ];
-    shader.set_shader_parameter("playerLookRaw".into(), uughgh.to_variant());
-
-    let cfg = &stuff.game.params;
-    shader
-      .set_shader_parameter("focalDist".into(), cfg.focal_dist.to_variant());
-    shader.set_shader_parameter("fov".into(), cfg.fov.to_variant());
-
-    shader.set_shader_parameter(
-      "aspectRatio".into(),
-      (VIEWPORT_WIDTH as f32 / VIEWPORT_HEIGHT as f32).to_variant(),
-    );
-  }
-
-  #[func]
   pub fn tree_tex(&self) -> Gd<ImageTexture> {
     self.stuff().tree_tex.clone()
   }
@@ -159,21 +131,37 @@ impl TesseractoryGodotBridge {
     Vector2i::new(VIEWPORT_WIDTH as _, VIEWPORT_HEIGHT as _)
   }
 
-  // Player API stuff
-
   #[func]
-  pub fn render_from(&mut self, pos: Vector4, rot: Gd<GdRotor4>) {
+  pub fn upload_foxels(&mut self) {
+    let now = Instant::now();
+
     let stuff = self.stuff_mut();
-    stuff.game.camera_pos = vec4_from_gd(pos);
-    stuff.game.camera_rot = rot.bind().inner;
+    stuff
+      .game
+      .world
+      .foxels
+      .upload(stuff.tree_scratch.as_mut_slice());
+    stuff.tree_image.set_data(
+      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
+      Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
+      false,
+      TREE_IMG_FORMAT,
+      stuff.tree_scratch.clone(),
+    );
+    stuff.tree_tex.update(stuff.tree_image.clone());
+
+    let time = Instant::now() - now;
+    godot_warn!("upload fps: {}", 1.0 / time.as_secs_f32(),);
   }
 }
 
 impl TesseractoryGodotBridge {
+  #[inline]
   fn stuff(&self) -> &OnReadyStuff {
     self.on_ready.as_ref().unwrap()
   }
 
+  #[inline]
   fn stuff_mut(&mut self) -> &mut OnReadyStuff {
     self.on_ready.as_mut().unwrap()
   }

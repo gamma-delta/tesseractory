@@ -48,8 +48,13 @@ impl Hexadecitree {
   pub const MAX_UPLOAD_BYTE_COUNT: usize =
     Self::BRICKS_BYTES + Self::MAX_COMPOSITE_BRICKS_BYTES;
 
-  /// Each pixel is 4 bytes due to Aughgh
-  pub const TRANSFER_IMAGE_SIZE: usize = 4096;
+  /// Each pixel is 4 bytes; RF encoding means each pixel is 1 4-bit float,
+  /// "representing" a monochrome red. This is the side length of the image
+  /// allowed, in pixels.
+  /// One byte equals one foxel, so one pixel equals 4 foxels kind of
+  pub const TRANSFER_IMAGE_SIZE: usize = (Self::MAX_UPLOAD_BYTE_COUNT / 4)
+    .isqrt()
+    .next_power_of_two();
   pub const TRANSFER_IMAGE_SIZE_SQ: usize = Self::TRANSFER_IMAGE_SIZE.pow(2);
 
   pub fn new() -> Self {

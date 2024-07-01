@@ -1,7 +1,8 @@
+#![feature(isqrt)]
+
 pub mod extensions;
 pub mod godot_bridge;
 pub mod math;
-pub mod player;
 pub mod world;
 
 use extensions::GodotObjectExt;

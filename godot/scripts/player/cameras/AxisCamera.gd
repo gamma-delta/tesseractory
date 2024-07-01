@@ -40,10 +40,10 @@ func movement(delta: float) -> Vector4:
     Input.get_axis("down", "up") * player.FLY_SPEED,
     Input.get_axis("back", "forward") * player.WALK_SPEED,
     Input.get_axis("right", "left") * player.WALK_SPEED,
-    0,
+    Input.get_axis("imaginary_minus", "imaginary_plus") * player.WALK_SPEED,
   ) * delta
-  dv.w = (Input.is_action_just_pressed("imaginary_plus") as int)\
-    - (Input.is_action_just_pressed("imaginary_minus") as int)
+  #dv.w = (Input.is_action_just_pressed("imaginary_plus") as int)\
+  #  - (Input.is_action_just_pressed("imaginary_minus") as int)
   
   var non_x_movement := Vector4(0, 1, 1, 1) * dv
   var raw_move := GdRotor4.from_rotation_between(Vector4(0, 0, 0, 1), self.imaginary_axis())\
