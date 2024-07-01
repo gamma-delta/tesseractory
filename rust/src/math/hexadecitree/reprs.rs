@@ -71,8 +71,13 @@ impl Hexadecitree {
     );
 
     bytes.fill(0);
+    // for (idx, brick_ptr) in self.grid.iter().enumerate() {
+    //   let other_endianized = brick_ptr.0.to_ne_bytes();
+    //   (&mut bytes[idx * 2..(idx + 1) * 2]).copy_from_slice(&other_endianized);
+    // }
     (&mut bytes[..Hexadecitree::BRICKS_BYTES])
       .copy_from_slice(bytemuck::cast_slice(&*self.grid));
+
     let composite_bricks: &[u8] =
       bytemuck::cast_slice(self.composite_bricks.as_slice());
     (&mut bytes[Hexadecitree::BRICKS_BYTES

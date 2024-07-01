@@ -12,8 +12,8 @@ const uint _H_HIGH_BIT = 1u << 15u;
 // Return the idx'th byte of the tree.
 // https://github.com/godotengine/godot/issues/57841
 // due to problems this is more difficult than it has to be.
-uint _H_index(sampler2D tree, uint idx) {
-  uint width = uint(textureSize(tree, 0).x);
+uint _H_index(uint idx) {
+  uint width = uint(textureSize(TREE_TEXTURE, 0).x);
   uint idxOver4 = idx / 4u;
   uint subByte = idx % 4u;
 
@@ -21,20 +21,32 @@ uint _H_index(sampler2D tree, uint idx) {
     int(idxOver4 % width),
     int(idxOver4 / width)
   );
-  float raw = texelFetch(tree, coords, 0).r;
-  uint bytes = floatBitsToUint(raw);
+  uint bytes = texelFetch(TREE_TEXTURE, coords, 0).r;
   // uint shift = 3u - subByte;
   uint shift = subByte;
   return (bytes >> (shift * 8u)) & 0xffu;
 }
 
-uint _H_getBrickPtrRepr(sampler2D tree, uint idx) {
+uint _H_getBrickPtrRepr(uint idx) {
+  uint width = uint(textureSize(TREE_TEXTURE, 0).x);
+  uint shortIdx = idx / 2u;
+  uint subByte = idx % 2u * 2u;
+  
+  ivec2 coords = ivec2(
+    int(shortIdx % width),
+    int(shortIdx / width)
+  );
+  uint bytes = texelFetch(TREE_TEXTURE, coords, 0).r;
+  return (bytes >> (subByte * 8u)) & 0xffffu;
+
+  /*
   uint bytesIdx = idx * 2u;
-  uint hi = _H_index(tree, bytesIdx);
-  uint lo = _H_index(tree, bytesIdx + 1u);
+  uint hi = _H_index(bytesIdx);
+  uint lo = _H_index(bytesIdx + 1u);
   // little endian can eat my ass
   return (lo << 8u) | hi;
   // return (hi << 8u) | lo;
+  */
 }
 
 void _H_decompose1(int v, out uint gridPos, out uint foxelPos) {
@@ -83,19 +95,19 @@ bool _H_decomposePos(
 #define H_GET_FOXEL 2u
 
 // Returns H_GET*
-uint H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
+uint H_get(ivec4 blockPos, out uint foxel) {
   uint gridIdx, foxelIdx;
   if (!_H_decomposePos(blockPos, gridIdx, foxelIdx)) {
     return H_GET_OOB;
   }
 
-  uint brickPtr = _H_getBrickPtrRepr(tree, gridIdx);
+  uint brickPtr = _H_getBrickPtrRepr(gridIdx);
   uint highBit = 1u << 15u;
   if ((brickPtr & highBit) != 0u) {
     // Composite
     uint compositeIdx = brickPtr & ~highBit;
     uint foxelOffset = compositeIdx * TREE_FOXELS_PER_BRICK + foxelIdx;
-    foxel = _H_index(tree, TREE_BRICKS_BYTES + foxelOffset);
+    foxel = _H_index(TREE_BRICKS_BYTES + foxelOffset);
     return H_GET_FOXEL;
   } else {
     // Solid brick
@@ -108,10 +120,10 @@ uint H_get(sampler2D tree, ivec4 blockPos, out uint foxel) {
 struct H_Hit {
   uint foxel;
   vec4 normal;
-  vec3 texpos;
+  vec4 texpos;
 };
 
-bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
+bool H_raycast(vec4 start, vec4 dir, out H_Hit hit) {
   ivec4 signums = ivec4(sign(dir));
   // only mutable things!!
   ivec4 cursor = ivec4(floor(start)) + ivec4(lessThan(dir, vec4(0)));
@@ -148,13 +160,15 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
     cursor += cursorInc;
     
     uint foxel;
-    uint res = H_get(tree, cursor + cursorOffset, foxel);
+    uint res = H_get(cursor + cursorOffset, foxel);
     if (res == H_GET_OOB) {
       return false;
     } else if (res == H_GET_FOXEL && foxel != 0u) {
       hit.foxel = foxel;
       hit.normal = -vec4(cursorInc);
       vec4 rawHitpos = fract(start + dir * exitTime);
+      hit.texpos = rawHitpos;
+      /*
       if (minTimeMap.x > 0) {
         hit.texpos = rawHitpos.yzw;
         // hit.texpos = vec3(1.0, 0.0, 0.0);
@@ -168,6 +182,7 @@ bool H_raycast(sampler2D tree, vec4 start, vec4 dir, out H_Hit hit) {
         hit.texpos = rawHitpos.xyz;
         // hit.texpos = vec3(1.0, 0.0, 1.0);
       }
+      */
       return true;
     }
   }

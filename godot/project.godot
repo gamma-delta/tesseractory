@@ -140,3 +140,7 @@ TREE_FOXELS_PER_BRICK={
 "type": "uint",
 "value": 0
 }
+TREE_TRANSFER_IMG_SIZE={
+"type": "uint",
+"value": 0
+}

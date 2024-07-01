@@ -11,4 +11,10 @@ global uniform uint TREE_BRICKS_BYTES;
 global uniform int TREE_MIN_COORD;
 global uniform int TREE_MAX_COORD;
 
+global uniform uint TREE_TRANSFER_IMG_SIZE;
+
+// https://github.com/godotengine/godot/issues/57841
+// Apparently we can bytemuck this and maybe save some perf?
+uniform usampler2D TREE_TEXTURE : filter_nearest;
+
 #endif

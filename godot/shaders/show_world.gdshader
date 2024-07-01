@@ -4,7 +4,9 @@ render_mode unshaded;
 #include "math.gdshaderinc"
 #include "hexadecitree.gdshaderinc"
 
-uniform sampler2D tree : filter_nearest;
+// https://github.com/godotengine/godot/issues/57841
+// Apparently we can bytemuck this and maybe save some perf?
+uniform usampler2D tree : filter_nearest;
 uniform sampler2D foxelPalette : filter_nearest;
 
 uniform vec4 playerPos;
@@ -23,7 +25,7 @@ void fragment() {
   vec4 rayDir = R4_rotvec(playerLook, rawRayDir);
 
   H_Hit hit;
-  if (H_raycast(tree, playerPos + rayDir * focalDist, rayDir, hit)) {
+  if (H_raycast(playerPos + rayDir * focalDist, rayDir, hit)) {
     // Temp foxel color lookup
     vec2 coords = vec2(
       float(hit.foxel % 16u) / 16.0,

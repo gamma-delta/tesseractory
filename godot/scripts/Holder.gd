@@ -16,12 +16,12 @@ func _ready():
   get_window().connect("focus_exited", self.on_unfocus)
 
   self.viewport.size = self.tesser.viewport_size() 
-  (self.screen.material as ShaderMaterial).set_shader_parameter("tree", self.tesser.tree_tex())
+  (self.screen.material as ShaderMaterial).set_shader_parameter("TREE_TEXTURE", self.tesser.tree_tex())
 
 func _process(_delta: float):
   world_ui.set_debug_info(tesser.debug_string())
   self.apply_shader_params()
-  %TesseractoryGodotBridge.upload_foxels()
+  %TesseractoryGodotBridge.upload_foxels()  
 
 func apply_shader_params() -> void:
   var shader := self.screen.material as ShaderMaterial
