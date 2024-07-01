@@ -66,3 +66,13 @@ impl BrickPtrRepr {
 #[derive(Debug, Clone, Copy, NoUninit)]
 #[repr(transparent)]
 pub struct Brick(pub [FoxelRepr; Hexadecitree::FOXELS_PER_BRICK as usize]);
+
+impl Brick {
+  pub fn composite_solid(foxel: Foxel) -> Self {
+    Brick(
+      (vec![foxel.encode(); Hexadecitree::FOXELS_PER_BRICK as usize])
+        .try_into()
+        .unwrap(),
+    )
+  }
+}

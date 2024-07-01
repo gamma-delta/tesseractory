@@ -4,7 +4,7 @@ use num_enum::TryFromPrimitive;
 /// Foxes are imaginary creatures that exist only in dreams.
 /// For reasons they can't explain, everyone knows what a fox looks like,
 /// but no one can ever remember having seen one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive, Hash)]
 #[repr(u8)]
 pub enum Foxel {
   Air,

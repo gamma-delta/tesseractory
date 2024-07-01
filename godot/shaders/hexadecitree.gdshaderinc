@@ -28,25 +28,7 @@ uint _H_index(uint idx) {
 }
 
 uint _H_getBrickPtrRepr(uint idx) {
-  uint width = uint(textureSize(TREE_TEXTURE, 0).x);
-  uint shortIdx = idx / 2u;
-  uint subByte = idx % 2u * 2u;
-  
-  ivec2 coords = ivec2(
-    int(shortIdx % width),
-    int(shortIdx / width)
-  );
-  uint bytes = texelFetch(TREE_TEXTURE, coords, 0).r;
-  return (bytes >> (subByte * 8u)) & 0xffffu;
-
-  /*
-  uint bytesIdx = idx * 2u;
-  uint hi = _H_index(bytesIdx);
-  uint lo = _H_index(bytesIdx + 1u);
-  // little endian can eat my ass
-  return (lo << 8u) | hi;
-  // return (hi << 8u) | lo;
-  */
+  return _H_index(idx);
 }
 
 void _H_decompose1(int v, out uint gridPos, out uint foxelPos) {
@@ -102,19 +84,10 @@ uint H_get(ivec4 blockPos, out uint foxel) {
   }
 
   uint brickPtr = _H_getBrickPtrRepr(gridIdx);
-  uint highBit = 1u << 15u;
-  if ((brickPtr & highBit) != 0u) {
-    // Composite
-    uint compositeIdx = brickPtr & ~highBit;
-    uint foxelOffset = compositeIdx * TREE_FOXELS_PER_BRICK + foxelIdx;
-    foxel = _H_index(TREE_BRICKS_BYTES + foxelOffset);
-    return H_GET_FOXEL;
-  } else {
-    // Solid brick
-    foxel = brickPtr & 0xffu;
-    return (foxel == 0u ? H_GET_AIR_BRICK : H_GET_FOXEL);
-    // return H_GET_FOXEL;
-  }
+  // Composite
+  uint foxelOffset = brickPtr * TREE_FOXELS_PER_BRICK + foxelIdx;
+  foxel = _H_index(TREE_BRICKS_BYTES + foxelOffset);
+  return H_GET_FOXEL;
 }
 
 struct H_Hit {

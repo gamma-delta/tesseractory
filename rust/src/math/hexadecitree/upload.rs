@@ -1,9 +1,11 @@
+use ahash::AHashMap;
 use itertools::Itertools;
 use ultraviolet::Vec4;
 
 use crate::{
   godot_bridge::{vec4_to_gd, GdPlayerCamera},
   math::hexadecitree::{BrickPtr, BrickRef},
+  world::foxel::{Foxel, FoxelRepr},
 };
 
 use super::{Brick, BrickPtrRepr, Hexadecitree};
@@ -12,8 +14,7 @@ impl Hexadecitree {
   pub const GPU_BRICK_PTRS_COUNT: u32 = Self::TOTAL_BRICK_COUNT;
   pub const GPU_COMPOSITE_BRICKS_COUNT: u32 = 256;
 
-  pub const GPU_BRICK_PTRS_BYTES: usize =
-    Self::GPU_BRICK_PTRS_COUNT as usize * std::mem::size_of::<BrickPtrRepr>();
+  pub const GPU_BRICK_PTRS_BYTES: usize = Self::GPU_BRICK_PTRS_COUNT as usize;
   pub const GPU_COMPOSITE_BRICKS_BYTES: usize =
     Self::GPU_COMPOSITE_BRICKS_COUNT as usize * std::mem::size_of::<Brick>();
 
@@ -35,28 +36,47 @@ impl Hexadecitree {
         <= Hexadecitree::GPU_TRANSFER_IMAGE_SIZE_SQ * 4
     );
 
-    let mut gpu_composite_bricks = Vec::<Brick>::new();
+    let mut solid_bricks = AHashMap::<Foxel, usize>::new();
+    let mut gpu_bricks = Vec::<Brick>::new();
+    solid_bricks.insert(Foxel::Air, 0);
+    gpu_bricks.push(Brick::composite_solid(Foxel::Air));
 
-    let gpu_brick_ptrs = self
+    let gpu_brick_ptrs: Vec<u8> = self
       .brick_ptrs()
+      // Map to Ok(idx)
       .map(|(corner, brick_repr)| {
         let brick_ref = self.brick_repr_to_ref(brick_repr).unwrap();
         match brick_ref {
-          BrickRef::Solid(_) => brick_repr,
+          BrickRef::Solid(f) => {
+            if let Some(already_idx) = solid_bricks.get(&f) {
+              *already_idx as u8
+            } else if gpu_bricks.len()
+              < Self::GPU_COMPOSITE_BRICKS_COUNT as usize
+            {
+              let new_idx = gpu_bricks.len() as u8;
+              gpu_bricks.push(Brick::composite_solid(f));
+              solid_bricks.insert(f, new_idx as usize);
+              new_idx
+            } else {
+              // Oh dear, just make it air?
+              0
+            }
+          }
           BrickRef::Ref(brick_ref) => {
-            let brick_limit_reached = gpu_composite_bricks.len()
-              >= Self::GPU_COMPOSITE_BRICKS_COUNT as usize;
+            let brick_limit_reached =
+              gpu_bricks.len() >= Self::GPU_COMPOSITE_BRICKS_COUNT as usize;
             // Check if the brick is actually in ambit
             let player_to_brick = vec4_to_gd(corner.into()) - cam.pos;
             let player_forward_vec = vec4_to_gd(cam.rot * Vec4::unit_y());
             let brick_probably_in_fov = player_to_brick.is_zero_approx()
-              || player_to_brick.normalized().dot(player_forward_vec) >= 0.0;
+              || player_to_brick.normalized().dot(player_forward_vec)
+                > -cam.fov;
             if brick_limit_reached || !brick_probably_in_fov {
-              BrickPtrRepr::entirely_air()
+              0
             } else {
-              let composite_idx = gpu_composite_bricks.len();
-              gpu_composite_bricks.push(brick_ref.clone());
-              BrickPtr::Pointer(composite_idx).encode()
+              let composite_idx = gpu_bricks.len();
+              gpu_bricks.push(brick_ref.clone());
+              composite_idx as u8
             }
           }
         }
@@ -69,7 +89,7 @@ impl Hexadecitree {
       .copy_from_slice(bytemuck::cast_slice(gpu_brick_ptrs.as_slice()));
 
     let composite_bricks_bytes: &[u8] =
-      bytemuck::cast_slice(gpu_composite_bricks.as_slice());
+      bytemuck::cast_slice(gpu_bricks.as_slice());
     (&mut bytes[Hexadecitree::GPU_BRICK_PTRS_BYTES
       ..Hexadecitree::GPU_BRICK_PTRS_BYTES + composite_bricks_bytes.len()])
       .copy_from_slice(composite_bricks_bytes);

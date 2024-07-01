@@ -104,12 +104,9 @@ impl Hexadecitree {
         }
 
         // Expand the brick
-        let mut brick_vec =
-          vec![fill.encode(); Hexadecitree::FOXELS_PER_BRICK as usize];
-        brick_vec[foxel_idx] = foxel.encode();
-        self
-          .composite_bricks
-          .push(Brick(brick_vec.try_into().unwrap()));
+        let mut new_brick = Brick::composite_solid(fill);
+        new_brick.0[foxel_idx] = foxel.encode();
+        self.composite_bricks.push(new_brick);
 
         let ptr_enc = BrickPtr::Pointer(new_composite_idx);
         *slot = ptr_enc.encode();
