@@ -103,7 +103,7 @@ impl INode for TesseractoryGodotBridge {
       ),
       (
         "TREE_BRICKS_BYTES",
-        (Hexadecitree::BRICKS_BYTES as u32).to_variant(),
+        (Hexadecitree::GPU_BRICK_PTRS_BYTES as u32).to_variant(),
       ),
       ("TREE_MIN_COORD", Hexadecitree::MIN_COORD.to_variant()),
       ("TREE_MAX_COORD", Hexadecitree::MAX_COORD.to_variant()),
@@ -151,7 +151,11 @@ impl TesseractoryGodotBridge {
     stuff.tree_tex.update(stuff.tree_image.clone());
 
     let time = Instant::now() - now;
-    godot_warn!("upload fps: {}", 1.0 / time.as_secs_f32(),);
+    godot_print!(
+      "upload fps: {}; img size {}",
+      1.0 / time.as_secs_f32(),
+      Hexadecitree::GPU_TRANSFER_IMAGE_SIZE
+    );
   }
 }
 

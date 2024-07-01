@@ -1,8 +1,9 @@
+use itertools::Itertools;
 use ultraviolet::Vec4;
 
 use crate::{
   godot_bridge::{vec4_to_gd, GdPlayerCamera},
-  math::hexadecitree::BrickRef,
+  math::hexadecitree::{BrickPtr, BrickRef},
 };
 
 use super::{Brick, BrickPtrRepr, Hexadecitree};
@@ -34,38 +35,39 @@ impl Hexadecitree {
         <= Hexadecitree::GPU_TRANSFER_IMAGE_SIZE_SQ * 4
     );
 
-    let mut gpu_brick_ptrs = Vec::<u16>::new();
-    let mut gpu_composite_bricks = Vec::new();
+    let mut gpu_composite_bricks = Vec::<Brick>::new();
 
-    for (corner, brick_repr) in self.brick_ptrs() {
-      let brick_ref = self.brick_repr_to_ref(brick_repr).unwrap();
-      match brick_ref {
-        BrickRef::Solid(_) => {
-          gpu_brick_ptrs.push(brick_repr.0);
-        }
-        BrickRef::Ref(brick_ref) => {
-          if gpu_composite_bricks.len()
-            >= Self::GPU_COMPOSITE_BRICKS_COUNT as usize
-          {
-            continue;
-          }
-
-          // Check if the brick is actually in ambit
-          let player_to_brick = vec4_to_gd(corner.into()) - cam.pos;
-          let player_forward_vec = vec4_to_gd(cam.rot * Vec4::unit_y());
-          if player_to_brick.is_zero_approx()
-            || player_to_brick.normalized().dot(player_forward_vec)
-              >= 1.0 - cam.fov
-          {
-            gpu_composite_bricks.push(brick_ref.clone());
-            gpu_brick_ptrs.push(gpu_composite_bricks.len() as u16 - 1);
+    let gpu_brick_ptrs = self
+      .brick_ptrs()
+      .map(|(corner, brick_repr)| {
+        let brick_ref = self.brick_repr_to_ref(brick_repr).unwrap();
+        match brick_ref {
+          BrickRef::Solid(_) => brick_repr,
+          BrickRef::Ref(brick_ref) => {
+            let brick_limit_reached = gpu_composite_bricks.len()
+              >= Self::GPU_COMPOSITE_BRICKS_COUNT as usize;
+            // Check if the brick is actually in ambit
+            let player_to_brick = vec4_to_gd(corner.into()) - cam.pos;
+            let player_forward_vec = vec4_to_gd(cam.rot * Vec4::unit_y());
+            let brick_probably_in_fov = player_to_brick.is_zero_approx()
+              || player_to_brick.normalized().dot(player_forward_vec) >= 0.0;
+            if brick_limit_reached || !brick_probably_in_fov {
+              BrickPtrRepr::entirely_air()
+            } else {
+              let composite_idx = gpu_composite_bricks.len();
+              gpu_composite_bricks.push(brick_ref.clone());
+              BrickPtr::Pointer(composite_idx).encode()
+            }
           }
         }
-      }
-    }
+      })
+      .collect_vec();
+
+    debug_assert_eq!(self.brick_ptrs.len(), gpu_brick_ptrs.len());
 
     (&mut bytes[..Hexadecitree::GPU_BRICK_PTRS_BYTES])
       .copy_from_slice(bytemuck::cast_slice(gpu_brick_ptrs.as_slice()));
+
     let composite_bricks_bytes: &[u8] =
       bytemuck::cast_slice(gpu_composite_bricks.as_slice());
     (&mut bytes[Hexadecitree::GPU_BRICK_PTRS_BYTES

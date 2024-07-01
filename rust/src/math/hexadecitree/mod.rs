@@ -42,11 +42,6 @@ impl Hexadecitree {
   pub const MIN_COORD: i32 = -(Self::FOXELS_ACROSS_WORLD as i32) / 2;
   pub const MAX_COORD: i32 = (Self::FOXELS_ACROSS_WORLD as i32) / 2 - 1;
 
-  pub const BRICKS_BYTES: u32 =
-    Self::TOTAL_BRICK_COUNT * std::mem::size_of::<BrickPtrRepr>() as u32;
-  pub const MAX_COMPOSITE_BRICKS_BYTES: u32 =
-    Self::COMPOSITE_BRICK_COUNT * std::mem::size_of::<Brick>() as u32;
-
   pub fn new() -> Self {
     let grid_vec =
       vec![BrickPtrRepr::entirely_air(); Self::TOTAL_BRICK_COUNT as usize];
