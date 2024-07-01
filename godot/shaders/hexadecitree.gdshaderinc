@@ -136,7 +136,7 @@ bool H_raycast(vec4 start, vec4 dir, out H_Hit hit) {
   vec4 nonZeroDirs = vec4(notEqual(dir, vec4(0.0)));
   vec4 zeroToSuperBig = 999999.0 * vec4(equal(dir, vec4(0.0)));
   
-  for(uint i = 0u; i < 32u; i++) {
+  for(uint i = 0u; i < 64u; i++) {
     // TODO: figure out how to skip empty foxels
     float stride = 1.0;
     // float stride = lastWasAirBrick ? float(TREE_FOXELS_ACROSS_BRICK) : 1.0;
@@ -168,21 +168,6 @@ bool H_raycast(vec4 start, vec4 dir, out H_Hit hit) {
       hit.normal = -vec4(cursorInc);
       vec4 rawHitpos = fract(start + dir * exitTime);
       hit.texpos = rawHitpos;
-      /*
-      if (minTimeMap.x > 0) {
-        hit.texpos = rawHitpos.yzw;
-        // hit.texpos = vec3(1.0, 0.0, 0.0);
-      } else if (minTimeMap.y > 0) {
-        hit.texpos = rawHitpos.xzw;
-        // hit.texpos = vec3(0.0, 1.0, 0.0);
-      } else if (minTimeMap.z > 0) {
-        hit.texpos = rawHitpos.xyw;
-        // hit.texpos = vec3(0.0, 0.0, 1.0);
-      } else {
-        hit.texpos = rawHitpos.xyz;
-        // hit.texpos = vec3(1.0, 0.0, 1.0);
-      }
-      */
       return true;
     }
   }

@@ -1,5 +1,7 @@
 mod math;
 
+pub use math::GdPlayerCamera;
+
 use std::time::Instant;
 
 use godot::{
@@ -81,8 +83,6 @@ impl INode for TesseractoryGodotBridge {
       tree_scratch: scratch,
     });
 
-    self.upload_foxels();
-
     let mut rs = RenderingServer::singleton();
     for (k, v) in [
       (
@@ -132,7 +132,7 @@ impl TesseractoryGodotBridge {
   }
 
   #[func]
-  pub fn upload_foxels(&mut self) {
+  pub fn upload_foxels(&mut self, cam: Gd<GdPlayerCamera>) {
     let now = Instant::now();
 
     let stuff = self.stuff_mut();
@@ -140,7 +140,7 @@ impl TesseractoryGodotBridge {
       .game
       .world
       .foxels
-      .upload(stuff.tree_scratch.as_mut_slice());
+      .upload(stuff.tree_scratch.as_mut_slice(), &cam);
     stuff.tree_image.set_data(
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,
       Hexadecitree::TRANSFER_IMAGE_SIZE as i32,

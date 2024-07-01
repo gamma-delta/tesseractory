@@ -1,0 +1,5 @@
+How on earth is the foxel data sent to the GPU?
+
+As-is:
+0                 : BrickPtr(u16)[TOTAL_BRICK_COUNT]
+TREE_BRICKS_BYTES : Foxel[BRICK_SIZE][TOTAL_BRICK_COUNT]

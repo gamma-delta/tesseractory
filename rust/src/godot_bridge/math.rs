@@ -107,3 +107,32 @@ fn bv(bivec: Bivec4) -> Gd<GdBivec4> {
 fn r(rotor: Rotor4) -> Gd<GdRotor4> {
   Gd::from_object(GdRotor4 { inner: rotor })
 }
+
+#[derive(GodotClass, Debug, Clone, Copy)]
+#[class(no_init)]
+#[allow(dead_code)]
+pub struct GdPlayerCamera {
+  pub pos: Vector4,
+  pub rot: Rotor4,
+  pub fov: f32,
+  pub focal_dist: f32,
+}
+
+#[godot_api]
+#[allow(dead_code)]
+impl GdPlayerCamera {
+  #[func]
+  fn make(
+    pos: Vector4,
+    rot: Gd<GdRotor4>,
+    fov: f32,
+    focal_dist: f32,
+  ) -> Gd<Self> {
+    Gd::from_init_fn(|_base| Self {
+      pos,
+      rot: rot.bind().inner,
+      fov,
+      focal_dist,
+    })
+  }
+}

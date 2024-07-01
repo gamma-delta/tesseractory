@@ -21,7 +21,8 @@ func _ready():
 func _process(_delta: float):
   world_ui.set_debug_info(tesser.debug_string())
   self.apply_shader_params()
-  %TesseractoryGodotBridge.upload_foxels()  
+  %TesseractoryGodotBridge.upload_foxels(GdPlayerCamera.make(
+    self.player.position, self.player.rotation(), self.player.FOV, self.player.FOCAL_DIST))
 
 func apply_shader_params() -> void:
   var shader := self.screen.material as ShaderMaterial

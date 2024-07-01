@@ -3,8 +3,12 @@
 use std::time::Instant;
 
 use bytemuck::NoUninit;
+use godot::obj::Gd;
 
-use crate::world::foxel::{Foxel, FoxelRepr};
+use crate::{
+  godot_bridge::GdPlayerCamera,
+  world::foxel::{Foxel, FoxelRepr},
+};
 
 use super::Hexadecitree;
 
@@ -64,13 +68,13 @@ impl BrickPtrRepr {
 pub struct Brick(pub [FoxelRepr; Hexadecitree::FOXELS_PER_BRICK]);
 
 impl Hexadecitree {
-  pub fn upload(&self, bytes: &mut [u8]) {
+  pub fn upload(&self, bytes: &mut [u8], cam: &Gd<GdPlayerCamera>) {
     debug_assert!(
       Hexadecitree::MAX_UPLOAD_BYTE_COUNT
         <= Hexadecitree::TRANSFER_IMAGE_SIZE_SQ * 4
     );
 
-    bytes.fill(0);
+    // bytes.fill(0);
     // for (idx, brick_ptr) in self.grid.iter().enumerate() {
     //   let other_endianized = brick_ptr.0.to_ne_bytes();
     //   (&mut bytes[idx * 2..(idx + 1) * 2]).copy_from_slice(&other_endianized);
