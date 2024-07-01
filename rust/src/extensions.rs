@@ -3,13 +3,13 @@ use godot::prelude::*;
 pub trait GodotObjectExt {
   fn totally<T>(&self, field: &str) -> T
   where
-    T: FromVariant;
+    T: FromGodot;
 }
 
 impl GodotObjectExt for godot::engine::Object {
   fn totally<T>(&self, field: &str) -> T
   where
-    T: FromVariant,
+    T: FromGodot,
   {
     let x: Variant = self.get(field.into());
     match T::try_from_variant(&x) {

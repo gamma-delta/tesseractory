@@ -18,15 +18,11 @@ ultraviolet = { version = "0.9.2", features = ["int"] }
 bumpalo = "3.14.0"
 log = "0.4.20"
 env_logger = "0.10.0"
+godot = "0.1"
 
-[dependencies.godot]
-git = "https://github.com/godot-rust/gdext"
-branch = "master"
-# features = ["custom-godot"]
-
-[patch."https://github.com/godot-rust/godot4-prebuilt".godot4-prebuilt]
-git = "https://github.com//godot-rust/godot4-prebuilt"
-branch = "4.2"
+# [patch."https://github.com/godot-rust/godot4-prebuilt".godot4-prebuilt]
+# git = "https://github.com//godot-rust/godot4-prebuilt"
+# branch = "4.2"
 
 [profile.dev.package.'*']
 opt-level = 3

@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// https://github.com/godotengine/godot/issues/57841
-const TREE_IMG_FORMAT: image::Format = image::Format::FORMAT_RF;
+const TREE_IMG_FORMAT: image::Format = image::Format::RF;
 
 const VIEWPORT_WIDTH: u32 = 1000;
 const VIEWPORT_HEIGHT: u32 = 600;
@@ -30,7 +30,6 @@ struct TesseractoryGodotBridge {
 
   on_ready: Option<OnReadyStuff>,
 
-  #[base]
   base: Base<Node>,
 }
 
@@ -44,7 +43,7 @@ struct OnReadyStuff {
 }
 
 #[godot_api]
-impl NodeVirtual for TesseractoryGodotBridge {
+impl INode for TesseractoryGodotBridge {
   fn init(base: Base<Node>) -> Self {
     // apparently is initialized elsewhere
     let _ = env_logger::try_init();
@@ -69,7 +68,7 @@ impl NodeVirtual for TesseractoryGodotBridge {
     .unwrap();
     let mut scratch = vec![0; Hexadecitree::TRANSFER_IMAGE_SIZE_SQ];
     let mut tree_tex =
-      ImageTexture::create_from_image(tree_image.share()).unwrap();
+      ImageTexture::create_from_image(tree_image.clone()).unwrap();
 
     game.world.foxels.upload(&mut scratch);
     tree_image.set_data(
@@ -79,7 +78,7 @@ impl NodeVirtual for TesseractoryGodotBridge {
       TREE_IMG_FORMAT,
       PackedByteArray::from(scratch.as_slice()),
     );
-    tree_tex.update(tree_image.share());
+    tree_tex.update(tree_image.clone());
 
     self.on_ready = Some(OnReadyStuff {
       game,
@@ -121,7 +120,7 @@ impl NodeVirtual for TesseractoryGodotBridge {
 #[godot_api]
 impl TesseractoryGodotBridge {
   #[func]
-  pub fn debug_string(&self) -> GodotString {
+  pub fn debug_string(&self) -> GString {
     let stuff = self.stuff();
     stuff.game.debug_info().into()
   }
@@ -152,7 +151,7 @@ impl TesseractoryGodotBridge {
 
   #[func]
   pub fn tree_tex(&self) -> Gd<ImageTexture> {
-    self.stuff().tree_tex.share()
+    self.stuff().tree_tex.clone()
   }
 
   #[func]

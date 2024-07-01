@@ -5,7 +5,7 @@ use crate::math::geo::*;
 use super::{vec4_from_gd, vec4_to_gd};
 
 #[derive(GodotClass, Debug, Clone, Copy)]
-#[class()]
+#[class(no_init)]
 #[allow(dead_code)]
 pub struct GdBivec4 {
   pub inner: Bivec4,
@@ -48,7 +48,7 @@ impl GdBivec4 {
 }
 
 #[derive(GodotClass, Debug, Clone, Copy)]
-#[class()]
+#[class(no_init)]
 #[allow(dead_code)]
 pub struct GdRotor4 {
   pub inner: Rotor4,
@@ -87,9 +87,9 @@ impl GdRotor4 {
 }
 
 fn bv(bivec: Bivec4) -> Gd<GdBivec4> {
-  Gd::new(GdBivec4 { inner: bivec })
+  Gd::from_object(GdBivec4 { inner: bivec })
 }
 
 fn r(rotor: Rotor4) -> Gd<GdRotor4> {
-  Gd::new(GdRotor4 { inner: rotor })
+  Gd::from_object(GdRotor4 { inner: rotor })
 }
