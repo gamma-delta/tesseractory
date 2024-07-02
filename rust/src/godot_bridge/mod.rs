@@ -5,12 +5,12 @@ pub use math::GdPlayerCamera;
 use std::time::Instant;
 
 use godot::{
-  engine::{image, Image, ImageTexture, RenderingServer, ShaderMaterial},
+  engine::{image, Image, ImageTexture, RenderingServer},
   prelude::*,
 };
 
 use crate::{
-  godot_bridge::math::GdRotor4, math::hexadecitree::Hexadecitree, GameParams,
+  math::hexadecitree::Hexadecitree, GameParams,
   TesseractoryGame,
 };
 

@@ -6,7 +6,7 @@ pub mod math;
 pub mod world;
 
 use extensions::GodotObjectExt;
-use godot::prelude::{Color, Gd, Resource};
+use godot::prelude::{Gd, Resource};
 use math::{geo::Rotor4, hexadecitree::Hexadecitree};
 use ultraviolet::Vec4;
 use world::{foxel::Foxel, World};

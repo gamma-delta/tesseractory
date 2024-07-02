@@ -4,11 +4,11 @@ use ultraviolet::Vec4;
 
 use crate::{
   godot_bridge::{vec4_to_gd, GdPlayerCamera},
-  math::hexadecitree::{BrickPtr, BrickRef},
-  world::foxel::{Foxel, FoxelRepr},
+  math::hexadecitree::BrickRef,
+  world::foxel::Foxel,
 };
 
-use super::{Brick, BrickPtrRepr, Hexadecitree};
+use super::{Brick, Hexadecitree};
 
 impl Hexadecitree {
   pub const GPU_BRICK_PTRS_COUNT: u32 = Self::TOTAL_BRICK_COUNT;
