@@ -28,7 +28,16 @@ uint _H_index(uint idx) {
 }
 
 uint _H_getBrickPtrRepr(uint idx) {
-  return _H_index(idx);
+  uint width = uint(textureSize(TREE_TEXTURE, 0).x);
+  uint shortIdx = idx / 2u;
+  uint subByte = idx % 2u * 2u;
+
+  ivec2 coords = ivec2(
+    int(shortIdx % width),
+    int(shortIdx / width)
+  );
+  uint bytes = texelFetch(TREE_TEXTURE, coords, 0).r;
+  return (bytes >> (subByte * 8u)) & 0xffffu;
 }
 
 void _H_decompose1(int v, out uint gridPos, out uint foxelPos) {
@@ -84,10 +93,19 @@ uint H_get(ivec4 blockPos, out uint foxel) {
   }
 
   uint brickPtr = _H_getBrickPtrRepr(gridIdx);
-  // Composite
-  uint foxelOffset = brickPtr * TREE_FOXELS_PER_BRICK + foxelIdx;
-  foxel = _H_index(TREE_BRICKS_BYTES + foxelOffset);
-  return H_GET_FOXEL;
+  uint highBit = 1u << 15u;
+  if ((brickPtr & highBit) != 0u) {
+    // Composite
+    uint compositeIdx = brickPtr & ~highBit;
+    uint foxelOffset = compositeIdx * TREE_FOXELS_PER_BRICK + foxelIdx;
+    foxel = _H_index(TREE_BRICKS_BYTES + foxelOffset);
+    return H_GET_FOXEL;
+  } else {
+    // Solid brick
+    foxel = brickPtr & 0xffu;
+    return (foxel == 0u ? H_GET_AIR_BRICK : H_GET_FOXEL);
+    // return H_GET_FOXEL;
+  }
 }
 
 struct H_Hit {
@@ -96,53 +114,60 @@ struct H_Hit {
   vec4 texpos;
 };
 
+// [1] https://ramakarl.com/pdfs/2016_Hoetzlein_GVDB.pdf
+// [2] https://blog.balintcsala.com/posts/voxel-tracing/
 bool H_raycast(vec4 start, vec4 dir, out H_Hit hit) {
-  ivec4 signums = ivec4(sign(dir));
+  ivec4 stepDir = ivec4(sign(dir));
+  vec4 stepSizes = 1.0 / abs(dir);
+  vec4 nextDist = (vec4(stepDir) * 0.5 + 0.5 - fract(start)) / dir;
+
   // only mutable things!!
-  ivec4 cursor = ivec4(floor(start)) + ivec4(lessThan(dir, vec4(0)));
+  vec4 curPos = start;
+  ivec4 foxelCursor = ivec4(floor(start));
 
-  ivec4 cursorOffset = -1 * ivec4(lessThan(dir, vec4(0)));
-
-  vec4 dirRecip = 1.0 / dir;
-  vec4 slopeSomething = -start * dirRecip;
-  // Prevent infinities
-  vec4 nonZeroDirs = vec4(notEqual(dir, vec4(0.0)));
-  vec4 zeroToSuperBig = 999999.0 * vec4(equal(dir, vec4(0.0)));
-  
+  uint prevBrickIdx = 0xDEADu;
+  uint _scratch = 69420u;
+  bool firstBrick = true;
+  bool prevWasAirBrick = false;
+ 
   for(uint i = 0u; i < 64u; i++) {
-    // TODO: figure out how to skip empty foxels
+    // TODO: figure out stride length again.
+    // float stride = (!firstBrick && prevWasAirBrick)
+    //   ? float(TREE_FOXELS_ACROSS_BRICK)
+    //   : 1.0;
     float stride = 1.0;
-    // float stride = lastWasAirBrick ? float(TREE_FOXELS_ACROSS_BRICK) : 1.0;
-
-    vec4 exitPoses = vec4(cursor) + vec4(signums) * stride;
-    vec4 rawExitTimes = fma(exitPoses, dirRecip, slopeSomething);
-    vec4 exitTimes = rawExitTimes * nonZeroDirs + zeroToSuperBig;
-    // auugh
-    float exitTime = min(exitTimes.x, min(exitTimes.y, min(exitTimes.z, exitTimes.w)));
-    // if (exitTime < 0.0) {
-    //   hit.foxel = 5u;
-    //   return true;
-    // }
-    // epsilon equal
-    ivec4 minTimeMap = ivec4(lessThan(
-      abs(exitTimes - exitTime),
+    float closestDist = min(nextDist.x, min(nextDist.y, min(nextDist.z, nextDist.w)));
+    // the lessThanEqual on the shadertoy [2] has precision issues
+    // because (due to imprecision?) it's not always LTE when it steps in that
+    // axis. or something. IDK, I just took this code from an older version.
+    // I think i should start commenting and stop trying to be clever.
+    ivec4 steppedInAxisMask = ivec4(lessThan(
+      abs(nextDist - closestDist),
       vec4(0.00001)
     ));
-    ivec4 cursorInc = minTimeMap * signums;
+    curPos += dir * closestDist;
+    foxelCursor += stepDir * steppedInAxisMask;
+    
+    nextDist += -closestDist + stepSizes * vec4(steppedInAxisMask) * stride;
 
-    cursor += cursorInc;
+    uint prevPrevBrickIdx = prevBrickIdx;
+    _H_decomposePos(foxelCursor, prevBrickIdx, _scratch);
+    if (prevPrevBrickIdx != 0xDEADu && prevPrevBrickIdx != prevBrickIdx) {
+      firstBrick = false;
+    }
     
     uint foxel;
-    uint res = H_get(cursor + cursorOffset, foxel);
+    uint res = H_get(foxelCursor, foxel);
     if (res == H_GET_OOB) {
       return false;
     } else if (res == H_GET_FOXEL && foxel != 0u) {
       hit.foxel = foxel;
-      hit.normal = -vec4(cursorInc);
-      vec4 rawHitpos = fract(start + dir * exitTime);
+      hit.normal = -vec4(steppedInAxisMask * stepDir);
+      vec4 rawHitpos = fract(start + dir * closestDist);
       hit.texpos = rawHitpos;
       return true;
     }
+    prevWasAirBrick = res == H_GET_AIR_BRICK;
   }
 
   return false;

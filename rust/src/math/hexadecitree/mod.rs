@@ -23,6 +23,8 @@ use reprs::*;
 pub struct Hexadecitree {
   brick_ptrs: Box<[BrickPtrRepr; Self::TOTAL_BRICK_COUNT as usize]>,
   composite_bricks: Vec<Brick>,
+
+  dirty: bool,
 }
 
 impl Hexadecitree {
@@ -49,6 +51,8 @@ impl Hexadecitree {
     Self {
       brick_ptrs: grid,
       composite_bricks: Vec::new(),
+
+      dirty: true,
     }
   }
 
@@ -71,7 +75,7 @@ impl Hexadecitree {
       decompose_pos(pos).ok_or(SetFoxelError::OutOfBounds)?;
 
     let slot = &mut self.brick_ptrs[grid_idx];
-    match slot.decode() {
+    let ok_foxel = match slot.decode() {
       BrickPtr::Pointer(ptr) => {
         let Some(bricc) = self.composite_bricks.get_mut(ptr) else {
           error!(
@@ -90,40 +94,44 @@ impl Hexadecitree {
           foxel
         );
         let extant = std::mem::replace(&mut bricc.0[foxel_idx], foxel.encode());
-        Ok(extant.decode())
+        extant.decode()
       }
       BrickPtr::Solid(fill) => {
         // no change!
         if fill == foxel {
-          return Ok(foxel);
+          foxel
+        } else {
+          let new_composite_idx = self.composite_bricks.len();
+          if new_composite_idx >= Self::COMPOSITE_BRICK_COUNT as usize {
+            return Err(SetFoxelError::OutOfMemory);
+          }
+
+          // Expand the brick
+          let mut new_brick = Brick::composite_solid(fill);
+          new_brick.0[foxel_idx] = foxel.encode();
+          self.composite_bricks.push(new_brick);
+
+          let ptr_enc = BrickPtr::Pointer(new_composite_idx);
+          *slot = ptr_enc.encode();
+
+          trace!(
+            "expanding brick #{} of {:?},\
+              now at composite #{} with inclusion {:?} @ #{}",
+            grid_idx,
+            fill,
+            new_composite_idx,
+            foxel,
+            foxel_idx
+          );
+
+          fill
         }
-
-        let new_composite_idx = self.composite_bricks.len();
-        if new_composite_idx >= Self::COMPOSITE_BRICK_COUNT as usize {
-          return Err(SetFoxelError::OutOfMemory);
-        }
-
-        // Expand the brick
-        let mut new_brick = Brick::composite_solid(fill);
-        new_brick.0[foxel_idx] = foxel.encode();
-        self.composite_bricks.push(new_brick);
-
-        let ptr_enc = BrickPtr::Pointer(new_composite_idx);
-        *slot = ptr_enc.encode();
-
-        trace!(
-          "expanding brick #{} of {:?},\
-          now at composite #{} with inclusion {:?} @ #{}",
-          grid_idx,
-          fill,
-          new_composite_idx,
-          foxel,
-          foxel_idx
-        );
-
-        Ok(fill)
       }
-    }
+    };
+
+    // if control flow reaches here, we modified the tree
+    self.dirty = true;
+    Ok(ok_foxel)
   }
 
   pub fn composite_brick_count(&self) -> usize {
@@ -167,6 +175,10 @@ impl Hexadecitree {
 
   pub fn auugh(&self) {
     println!("{:?}", &self.composite_bricks[0]);
+  }
+
+  pub fn mark_clean(&mut self) {
+    self.dirty = false;
   }
 }
 

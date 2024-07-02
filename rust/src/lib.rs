@@ -1,4 +1,5 @@
 #![feature(isqrt)]
+#![feature(try_blocks)]
 
 pub mod extensions;
 pub mod godot_bridge;
@@ -15,12 +16,10 @@ pub struct TesseractoryGame {
   world: World,
   camera_pos: Vec4,
   camera_rot: Rotor4,
-
-  params: GameParams,
 }
 
 impl TesseractoryGame {
-  pub fn new(params: GameParams) -> Self {
+  pub fn new() -> Self {
     let sun_dir = Vec4::new(-0.5, 0.4, 0.2, 0.1).normalized();
     let mut world = World::new(sun_dir);
     world.setup_sample_scene();
@@ -29,7 +28,6 @@ impl TesseractoryGame {
       world,
       camera_pos: Vec4::zero(),
       camera_rot: Rotor4::identity(),
-      params,
     }
   }
 
@@ -48,19 +46,5 @@ impl TesseractoryGame {
     );
 
     w
-  }
-}
-
-pub struct GameParams {
-  pub focal_dist: f32,
-  pub fov: f32,
-}
-
-impl GameParams {
-  pub fn load(cfg: &Gd<Resource>) -> Self {
-    Self {
-      focal_dist: cfg.totally::<f32>("focal_dist") / 1_000.0,
-      fov: cfg.totally::<f32>("fov"),
-    }
   }
 }

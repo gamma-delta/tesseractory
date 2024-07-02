@@ -9,10 +9,7 @@ use godot::{
   prelude::*,
 };
 
-use crate::{
-  math::hexadecitree::Hexadecitree, GameParams,
-  TesseractoryGame,
-};
+use crate::{math::hexadecitree::Hexadecitree, TesseractoryGame};
 
 /// https://github.com/godotengine/godot/issues/57841
 const TREE_IMG_FORMAT: image::Format = image::Format::RF;
@@ -29,9 +26,6 @@ unsafe impl ExtensionLibrary for TesseractoryExtension {}
 #[class(base = Node)]
 #[allow(dead_code)]
 struct TesseractoryGodotBridge {
-  #[export]
-  cfg: Option<Gd<Resource>>,
-
   on_ready: Option<OnReadyStuff>,
 
   base: Base<Node>,
@@ -55,14 +49,12 @@ impl INode for TesseractoryGodotBridge {
 
     Self {
       base,
-      cfg: None,
       on_ready: None,
     }
   }
 
   fn ready(&mut self) {
-    let params = GameParams::load(self.cfg.as_ref().unwrap());
-    let game = TesseractoryGame::new(params);
+    let game = TesseractoryGame::new();
 
     let scratch = PackedByteArray::from(
       vec![0u8; Hexadecitree::GPU_TRANSFER_IMAGE_SIZE_SQ * 4].as_slice(),

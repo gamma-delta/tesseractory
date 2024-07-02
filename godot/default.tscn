@@ -1,7 +1,6 @@
-[gd_scene load_steps=10 format=3 uid="uid://bipuhyuwlp8gs"]
+[gd_scene load_steps=9 format=3 uid="uid://bipuhyuwlp8gs"]
 
 [ext_resource type="Script" path="res://scripts/Holder.gd" id="1_8wfm5"]
-[ext_resource type="Resource" uid="uid://ifq18qbmmpdm" path="res://config.tres" id="2_2kyj1"]
 [ext_resource type="Shader" path="res://shaders/show_world.gdshader" id="2_08noi"]
 [ext_resource type="Texture2D" uid="uid://dednugytpgg4i" path="res://textures/temp_atlas.png" id="3_bds7r"]
 [ext_resource type="PackedScene" uid="uid://da5cspbs8vsca" path="res://scenes/WorldUI.tscn" id="3_bgrba"]
@@ -61,7 +60,6 @@ camera = NodePath("AxisCamera")
 script = ExtResource("5_n1srv")
 
 [node name="TesseractoryGodotBridge" type="TesseractoryGodotBridge" parent="StopWhenPaused"]
-cfg = ExtResource("2_2kyj1")
 unique_name_in_owner = true
 
 [node name="WorldUI" parent="StopWhenPaused" instance=ExtResource("3_bgrba")]
