@@ -22,10 +22,11 @@ impl Hexadecitree {
   pub const GPU_TOTAL_BYTES: usize =
     Self::GPU_BRICK_PTRS_BYTES + Self::GPU_COMPOSITE_BRICKS_BYTES;
 
-  /// Each pixel is 4 bytes; RF encoding means each pixel is 1 4-bit float,
-  /// "representing" a monochrome red. This is the side length of the image
-  /// allowed, in pixels.
-  /// One byte equals one foxel, so one pixel equals 4 foxels kind of
+  /// RF encoding means each pixel is 1 8-bit float,
+  /// "representing" a monochrome red.
+  /// One byte equals one foxel, so one pixel equals 4 foxels.
+  ///
+  /// This is the side length of the image allowed, in pixels.
   pub const GPU_TRANSFER_IMAGE_SIZE: usize =
     (Self::GPU_TOTAL_BYTES / 4).isqrt().next_power_of_two();
   pub const GPU_TRANSFER_IMAGE_SIZE_SQ: usize =
@@ -58,7 +59,7 @@ impl Hexadecitree {
             let brick_probably_in_fov = player_to_brick.is_zero_approx()
               || player_to_brick.normalized().dot(player_forward_vec)
                 >= -cam.fov;
-            if brick_limit_reached || !brick_probably_in_fov {
+            if false {
               BrickPtrRepr::entirely_air()
             } else {
               let composite_idx = gpu_composite_bricks.len();
