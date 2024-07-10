@@ -1,0 +1,101 @@
+[gd_scene load_steps=4 format=3 uid="uid://dblqlns1yj4we"]
+
+[ext_resource type="Script" path="res://scenes/overlay_ui.gd" id="1_h3swd"]
+
+[sub_resource type="Environment" id="Environment_dbsln"]
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_8farb"]
+size = Vector3(0.1, 0.1, 0.1)
+
+[node name="OverlayUi" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_h3swd")
+
+[node name="WorldUI" type="Control" parent="." groups=["ShowUnpaused"]]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="WorldUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+
+[node name="DebugInfo" type="Label" parent="WorldUI/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 1
+text = "foobar"
+
+[node name="PauseUI" type="Control" parent="." groups=["ShowPaused"]]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Darken" type="ColorRect" parent="PauseUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.392157)
+
+[node name="MarginContainer" type="MarginContainer" parent="PauseUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+
+[node name="Paused" type="Label" parent="PauseUI/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Paused!"
+
+[node name="3dGreeblesUi" type="SubViewportContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="3dGreeblesUi"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1000, 600)
+render_target_update_mode = 0
+
+[node name="GreeblesRenderCam" type="Camera3D" parent="3dGreeblesUi/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.5)
+environment = SubResource("Environment_dbsln")
+projection = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="3dGreeblesUi/SubViewport"]
+transform = Transform3D(0.197738, 0.430005, -0.880906, -0.519015, 0.808278, 0.278048, 0.831579, 0.402223, 0.383006, 0.686, 0.373, 0)
+mesh = SubResource("BoxMesh_8farb")

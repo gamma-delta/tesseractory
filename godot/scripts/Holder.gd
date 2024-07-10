@@ -1,11 +1,8 @@
 extends Node
 
 @onready var tesser : TesseractoryGodotBridge = %TesseractoryGodotBridge
-@onready var viewport : SubViewport = %ScreenViewport
+#@onready var viewport : SubViewport = %ScreenViewport
 @onready var screen : Control = %ScreenRender
-
-@onready var world_ui : WorldUI = %WorldUI
-@onready var pause_ui : Control = %PauseUI
 
 @onready var player : Player = %Player
 
@@ -15,11 +12,11 @@ func _ready():
   get_window().connect("focus_entered", self.on_focus)
   get_window().connect("focus_exited", self.on_unfocus)
 
-  self.viewport.size = self.tesser.viewport_size() 
+  #self.viewport.size = self.tesser.viewport_size() 
   (self.screen.material as ShaderMaterial).set_shader_parameter("TREE_TEXTURE", self.tesser.tree_tex())
 
 func _process(_delta: float):
-  world_ui.set_debug_info(tesser.debug_string())
+  %OverlayUi.set_debug_info(tesser.debug_string())
   self.apply_shader_params()
   %TesseractoryGodotBridge.upload_foxels(GdPlayerCamera.make(
     self.player.position, self.player.rotation(), self.player.FOV, self.player.FOCAL_DIST))
@@ -42,16 +39,13 @@ func _input(event: InputEvent):
   if event.is_action_pressed("pause"):
     var paused := get_tree().paused
     if paused:
-      # Unpause
-      pause_ui.hide()
-      world_ui.show()
+      # unpause
       Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
     else:
       # Pause
-      pause_ui.show()
-      world_ui.hide()
       Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     get_tree().paused = !paused
+    %OverlayUi.mark_paused(!paused)
 
 func on_focus():
   if !get_tree().paused:

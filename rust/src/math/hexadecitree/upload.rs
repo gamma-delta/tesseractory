@@ -59,7 +59,7 @@ impl Hexadecitree {
             let brick_probably_in_fov = player_to_brick.is_zero_approx()
               || player_to_brick.normalized().dot(player_forward_vec)
                 >= -cam.fov;
-            if false {
+            if brick_limit_reached || !brick_probably_in_fov {
               BrickPtrRepr::entirely_air()
             } else {
               let composite_idx = gpu_composite_bricks.len();

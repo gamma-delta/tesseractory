@@ -36,10 +36,10 @@ void fragment() {
   } else {
     vec4 flipRay = abs(rayDir);
     vec4 squishRay = clamp(
-      8.0 * (flipRay * flipRay * flipRay * flipRay - 1.0) + 1.0, 
+      8.0 * (flipRay * flipRay * flipRay * flipRay - 1.0) + 1.0,
       0, 1
     );
-    
+
     vec3 xCol = (1.0 - vec3(1, 0, 0)) * squishRay.x;
     vec3 yCol = (1.0 - vec3(0, 1, 0)) * squishRay.y;
     vec3 zCol = (1.0 - vec3(0, 0, 1)) * squishRay.z;
