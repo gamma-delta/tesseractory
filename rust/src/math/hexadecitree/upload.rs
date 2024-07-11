@@ -12,7 +12,7 @@ use super::{Brick, Hexadecitree};
 
 impl Hexadecitree {
   pub const GPU_BRICK_PTRS_COUNT: u32 = Self::TOTAL_BRICK_COUNT;
-  pub const GPU_COMPOSITE_BRICKS_COUNT: u32 = 256;
+  pub const GPU_COMPOSITE_BRICKS_COUNT: u32 = 16;
 
   pub const GPU_BRICK_PTRS_BYTES: usize =
     Self::GPU_BRICK_PTRS_COUNT as usize * std::mem::size_of::<BrickPtrRepr>();
