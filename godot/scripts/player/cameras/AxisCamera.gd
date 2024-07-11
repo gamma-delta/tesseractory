@@ -1,6 +1,6 @@
 class_name AxisCamera extends PlayerCamera
 
-# Pretty sure that "no rotation" means that forward is +Y
+# Pretty sure that "no rotation" means that forward is +Y     
 
 var rot_yz: float = 0.0
 var rot_xy: float = 0.0

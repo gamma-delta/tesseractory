@@ -116,56 +116,41 @@ struct H_Hit {
 
 // [1] https://ramakarl.com/pdfs/2016_Hoetzlein_GVDB.pdf
 // [2] https://blog.balintcsala.com/posts/voxel-tracing/
-bool H_raycast(vec4 start, vec4 dir, out H_Hit hit) {
-  ivec4 stepDir = ivec4(sign(dir));
-  vec4 nextDist = (vec4(stepDir) * 0.5 + 0.5 - fract(start)) / dir;
-
-  // only mutable things!!
+// https://www.cs.cornell.edu/courses/cs4620/2013fa/lectures/03raytracing1.pdf
+// to step across empty voxels, just pretend i'm doing a standard box-
+// intersection test every time
+bool H_raycast(vec4 start, vec4 direction, out H_Hit hit) {
+  vec4 stepSizes = 1.0 / direction;
+  vec4 stepSigns = sign(direction);
+  // only mutable thing!
   vec4 curPos = start;
-  int stride = 1;
 
-  uint prevBrickIdx = 0xDEADu;
-  uint _scratch = 69420u;
-  bool firstBrick = true;
   bool prevWasAirBrick = false;
 
-  /*
-  Herein lies the rub:
-  When stepping by 1, the foxel scanned goes up either by 0 or 1 in each dir
-  But when stepping by more than 1, the number of foxels traversed by each
-  can vary.
-  For example
-    +---+
-    |   |
-    |  .X..>
-   .X.. |
->.. +---+
-
-the line goes across 5, and up 1.
-  */
- 
   for(uint i = 0u; i < 64u; i++) {
-    vec4 stepSizes = float(stride) / abs(dir);
-    float closestDist = min(nextDist.x, min(nextDist.y, min(nextDist.z, nextDist.w)));
-    vec4 amountSteppedPerAxis = closestDist / dir;
-    curPos += dir * closestDist;
-    ivec4 foxelCursor = ivec4(floor(curPos));
-    
-    uint prevPrevBrickIdx = prevBrickIdx;
-    _H_decomposePos(foxelCursor, prevBrickIdx, _scratch);
-    if (prevPrevBrickIdx != 0xDEADu && prevPrevBrickIdx != prevBrickIdx) {
-      firstBrick = false;
-    }
-    
+    vec4 brickSize = prevWasAirBrick 
+        ? vec4(float(TREE_FOXELS_ACROSS_BRICK)) : vec4(1.0);
+    // gdshaders don't have piecewise ternary, but they do have this.
+    // i think it goes false, true though
+    vec4 snapAwayFromRay = mix(
+        ceil(curPos), floor(curPos),
+        greaterThan(direction, vec4(0.0)));
+    vec4 voxelEnds = 
+        (floor(snapAwayFromRay / brickSize) + stepSigns) * brickSize;
+    // box intersection
+    vec4 minTimes = abs((voxelEnds - curPos) * stepSizes);
+    float minTime = 
+        min(minTimes.x, min(minTimes.y, min(minTimes.z, minTimes.w)));
+
+    curPos += direction * minTime;
+
+    ivec4 foxelPos = ivec4(floor(curPos + direction * 0.00001));
     uint foxel;
-    uint res = H_get(foxelCursor, foxel);
+    uint res = H_get(foxelPos, foxel);
     if (res == H_GET_OOB) {
       return false;
     } else if (res == H_GET_FOXEL && foxel != 0u) {
-      // ivec4 steppedInAxisMask = ivec4(lessThan(
-      //   abs(nextDist - closestDist),
-      //   vec4(0.00001)
-      // ));
+      ivec4 steppedInAxisMask = ivec4(equal(minTimes, vec4(minTime)));
 
       hit.foxel = foxel;
       hit.normal = vec4(1.0, 0.0, 0.0, 0.0);
@@ -173,13 +158,6 @@ the line goes across 5, and up 1.
       return true;
     }
     prevWasAirBrick = res == H_GET_AIR_BRICK;
-
-    // stride = (!firstBrick && prevWasAirBrick)
-    //   ? int(TREE_FOXELS_ACROSS_BRICK)
-    //   : 1;
-    // reset to boundary
-    nextDist -= closestDist;
-    nextDist += stepSizes * amountSteppedPerAxis * float(stride);
   }
 
   return false;
